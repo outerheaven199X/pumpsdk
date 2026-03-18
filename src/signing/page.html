@@ -60,6 +60,27 @@
       text-transform: uppercase; margin-top: 0.35rem;
     }
 
+    .phase-dots {
+      display: flex; justify-content: center; align-items: center;
+      gap: 0.5rem; margin-bottom: 1.25rem;
+    }
+    .phase-dot {
+      width: 10px; height: 10px; border-radius: 50%;
+      background: var(--border); transition: background 0.3s;
+    }
+    .phase-dot.active { background: var(--accent); }
+    .phase-dot.done { background: var(--accent); opacity: 0.5; }
+    .phase-line {
+      width: 32px; height: 2px; background: var(--border);
+      transition: background 0.3s;
+    }
+    .phase-line.done { background: var(--accent); opacity: 0.5; }
+    .phase-label {
+      font-size: 0.75rem; color: var(--text-light);
+      text-align: center; margin-bottom: 1rem;
+      text-transform: uppercase; letter-spacing: 0.1em;
+    }
+
     .card {
       background: var(--bg-card); border: 1px solid var(--border);
       border-radius: var(--radius); padding: 1.25rem;
@@ -158,7 +179,18 @@
   <div class="container">
     <div class="logo">
       <h1><span class="pump">Pump</span>.fun MCP</h1>
-      <span class="sub">Transaction Signer</span>
+      <span class="sub" id="page-subtitle">Transaction Signer</span>
+    </div>
+
+    <div id="phase-indicator" class="hidden">
+      <div class="phase-dots">
+        <div class="phase-dot" id="dot-connect"></div>
+        <div class="phase-line" id="line-1"></div>
+        <div class="phase-dot" id="dot-fee"></div>
+        <div class="phase-line" id="line-2"></div>
+        <div class="phase-dot" id="dot-launch"></div>
+      </div>
+      <div class="phase-label" id="phase-label">Connect Wallet</div>
     </div>
 
     <div class="card" id="meta-card">
@@ -198,7 +230,7 @@
 
   <script src="https://unpkg.com/@solana/web3.js@1.98.0/lib/index.iife.min.js"></script>
   <script>
-    /* Signing page for PumpFun MCP — pre-built transaction signing only. */
+    /* Signing page for PumpFun MCP — supports both pre-built signing and multi-phase launch. */
 
     var API_BASE = window.location.origin;
     var Connection = solanaWeb3.Connection;
@@ -208,7 +240,13 @@
     var connectedWallet = null;
     var rpcUrl = "https://api.mainnet-beta.solana.com";
     var currentTransactions = [];
-    var sessionId = window.location.pathname.split("/sign/")[1];
+
+    /* Detect mode from URL path: /launch/:id or /sign/:id */
+    var isLaunchMode = window.location.pathname.indexOf("/launch/") !== -1;
+    var sessionId = isLaunchMode
+      ? window.location.pathname.split("/launch/")[1]
+      : window.location.pathname.split("/sign/")[1];
+    var currentLaunchPhase = "connect";
 
     var KNOWN_WALLETS = [
       { name: "Phantom",       check: function() { return window.phantom?.solana; },                        icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128' fill='none'%3E%3Crect width='128' height='128' rx='26' fill='%23AB9FF2'/%3E%3Cpath d='M110.584 64.914h-7.117c0-24.84-20.321-44.97-45.4-44.97-24.772 0-44.9 19.693-45.39 44.144-.503 25.097 20.57 46.796 45.834 46.796h2.049c22.212 0 42.127-14.478 49.085-35.608a4.288 4.288 0 00-4.06-5.768h-.001zm-73.894 7.16a5.393 5.393 0 01-5.4 5.38 5.393 5.393 0 01-5.4-5.38 5.393 5.393 0 015.4-5.38 5.393 5.393 0 015.4 5.38zm22.2 0a5.393 5.393 0 01-5.4 5.38 5.393 5.393 0 01-5.4-5.38 5.393 5.393 0 015.4-5.38 5.393 5.393 0 015.4 5.38z' fill='%23FFF'/%3E%3C/svg%3E" },
@@ -220,6 +258,13 @@
       { name: "Exodus",        check: function() { return window.exodus?.solana; },                         icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Crect width='128' height='128' rx='26' fill='%231F1B4D'/%3E%3Cpath d='M36 44h56l-20 20 20 20H36l20-20z' fill='%238B6CDF'/%3E%3C/svg%3E" },
       { name: "OKX",           check: function() { return window.okxwallet?.solana; },                      icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Crect width='128' height='128' rx='26' fill='%23000'/%3E%3Crect x='28' y='28' width='28' height='28' rx='4' fill='%23FFF'/%3E%3Crect x='72' y='28' width='28' height='28' rx='4' fill='%23FFF'/%3E%3Crect x='50' y='50' width='28' height='28' rx='4' fill='%23FFF'/%3E%3Crect x='28' y='72' width='28' height='28' rx='4' fill='%23FFF'/%3E%3Crect x='72' y='72' width='28' height='28' rx='4' fill='%23FFF'/%3E%3C/svg%3E" },
     ];
+
+    var PHASE_LABELS = {
+      connect: "Connect Wallet",
+      fee_config: "Sign Fee Config",
+      launch: "Sign & Launch",
+      complete: "Complete"
+    };
 
     function decodeBase58(str) {
       var ALPHABET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
@@ -242,7 +287,6 @@
       return new Uint8Array(bytes.reverse());
     }
 
-    /** Decode a base64 string to Uint8Array. */
     function decodeBase64(str) {
       var raw = atob(str);
       var bytes = new Uint8Array(raw.length);
@@ -250,12 +294,11 @@
       return bytes;
     }
 
-    /** Detect encoding and decode transaction bytes. */
     function decodeTx(str) {
       var looksBase64 = /^[A-Za-z0-9+/=]+$/.test(str) && str.length > 100
         && (str.indexOf("+") !== -1 || str.indexOf("/") !== -1 || str.endsWith("="));
       if (looksBase64) {
-        try { return decodeBase64(str); } catch (_e) { /* fall through to base58 */ }
+        try { return decodeBase64(str); } catch (_e) { /* fall through */ }
       }
       return decodeBase58(str);
     }
@@ -266,6 +309,31 @@
       div.className = "status " + type;
       div.innerHTML = message;
       area.appendChild(div);
+    }
+
+    function clearStatus() {
+      document.getElementById("status-area").innerHTML = "";
+    }
+
+    function updatePhaseIndicator(phase) {
+      currentLaunchPhase = phase;
+      var phases = ["connect", "fee_config", "launch"];
+      var idx = phases.indexOf(phase);
+
+      for (var pi = 0; pi < phases.length; pi++) {
+        var dot = document.getElementById("dot-" + ["connect", "fee", "launch"][pi]);
+        dot.className = "phase-dot";
+        if (pi < idx) dot.classList.add("done");
+        if (pi === idx) dot.classList.add("active");
+      }
+
+      var line1 = document.getElementById("line-1");
+      var line2 = document.getElementById("line-2");
+      line1.className = idx > 0 ? "phase-line done" : "phase-line";
+      line2.className = idx > 1 ? "phase-line done" : "phase-line";
+
+      var label = document.getElementById("phase-label");
+      label.textContent = PHASE_LABELS[phase] || phase;
     }
 
     function renderMeta(meta) {
@@ -311,7 +379,20 @@
       if (found === 0) noWallets.classList.remove("hidden");
     }
 
-    async function connectWallet(name, provider) {
+    /** Show the sign card with transactions ready for signing. */
+    function showSignCard(description, transactions) {
+      currentTransactions = transactions;
+      var txCount = transactions.length;
+      var card = document.getElementById("sign-card");
+      card.classList.remove("hidden");
+      document.getElementById("sign-description").textContent = description || (txCount + " transaction" + (txCount > 1 ? "s" : "") + " to sign.");
+      document.getElementById("sign-btn").textContent = "Sign & Send";
+      document.getElementById("sign-btn").disabled = false;
+    }
+
+    /* ===== Sign Mode (pre-built transactions) ===== */
+
+    async function connectWalletSign(name, provider) {
       try {
         document.querySelectorAll(".wallet-btn").forEach(function(b) { b.disabled = true; });
         var resp = await provider.connect();
@@ -322,18 +403,15 @@
           '<h2>Connected</h2><div class="meta-row"><span class="meta-label">' + name +
           '</span><span class="meta-value">' + pubkey.slice(0,4) + '...' + pubkey.slice(-4) + '</span></div>';
 
-        var txCount = currentTransactions.length;
-        var card = document.getElementById("sign-card");
-        card.classList.remove("hidden");
-        document.getElementById("sign-description").textContent = txCount + " transaction" + (txCount > 1 ? "s" : "") + " to sign.";
-        document.getElementById("sign-btn").onclick = signAndSend;
+        showSignCard(null, currentTransactions);
+        document.getElementById("sign-btn").onclick = signAndSendSign;
       } catch (err) {
         showStatus("Wallet connection failed: " + err.message, "error");
         document.querySelectorAll(".wallet-btn").forEach(function(b) { b.disabled = false; });
       }
     }
 
-    async function signAndSend() {
+    async function signAndSendSign() {
       var btn = document.getElementById("sign-btn");
       var bar = document.getElementById("progress-bar");
       var fill = document.getElementById("progress-fill");
@@ -390,7 +468,159 @@
       } catch (_e) { /* best-effort */ }
     }
 
-    async function init() {
+    /* ===== Launch Mode (multi-phase) ===== */
+
+    async function connectWalletLaunch(name, provider) {
+      try {
+        document.querySelectorAll(".wallet-btn").forEach(function(b) { b.disabled = true; });
+        var resp = await provider.connect();
+        var pubkey = (resp.publicKey || provider.publicKey).toString();
+        connectedWallet = { name: name, provider: provider, pubkey: pubkey };
+
+        document.getElementById("wallet-card").innerHTML =
+          '<h2>Connected</h2><div class="meta-row"><span class="meta-label">' + name +
+          '</span><span class="meta-value">' + pubkey.slice(0,4) + '...' + pubkey.slice(-4) + '</span></div>';
+
+        showStatus('<span class="spinner"></span> Building fee config transactions...', "info");
+
+        var connectResp = await fetch(API_BASE + "/api/launch/" + sessionId + "/connect", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ wallet: pubkey }),
+        });
+
+        if (!connectResp.ok) {
+          var errData = await connectResp.json();
+          throw new Error(errData.error || "Connect failed");
+        }
+
+        var data = await connectResp.json();
+        clearStatus();
+        updatePhaseIndicator("fee_config");
+        showSignCard(data.description, data.transactions);
+        document.getElementById("sign-btn").onclick = signFeeConfig;
+      } catch (err) {
+        clearStatus();
+        showStatus("Failed to build fee config: " + err.message, "error");
+        document.querySelectorAll(".wallet-btn").forEach(function(b) { b.disabled = false; });
+      }
+    }
+
+    async function signFeeConfig() {
+      var signatures = await signTransactionBatch("fee config");
+      if (!signatures) return;
+
+      showStatus('<span class="spinner"></span> Building launch transaction...', "info");
+
+      try {
+        var feeResp = await fetch(API_BASE + "/api/launch/" + sessionId + "/fee-signed", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ signatures: signatures }),
+        });
+
+        if (!feeResp.ok) {
+          var errData = await feeResp.json();
+          throw new Error(errData.error || "Fee signed callback failed");
+        }
+
+        var data = await feeResp.json();
+        clearStatus();
+        updatePhaseIndicator("launch");
+        showSignCard(data.description, data.transactions);
+        document.getElementById("sign-btn").onclick = signLaunch;
+      } catch (err) {
+        clearStatus();
+        showStatus("Failed to build launch tx: " + err.message, "error");
+        document.getElementById("sign-btn").textContent = "Retry";
+        document.getElementById("sign-btn").disabled = false;
+      }
+    }
+
+    async function signLaunch() {
+      var signatures = await signTransactionBatch("launch");
+      if (!signatures) return;
+
+      try {
+        await fetch(API_BASE + "/api/launch/" + sessionId + "/complete", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ signatures: signatures }),
+        });
+      } catch (_e) { /* best-effort */ }
+
+      updatePhaseIndicator("complete");
+      document.getElementById("sign-btn").textContent = "Token launched!";
+      document.getElementById("phase-label").textContent = "Complete";
+    }
+
+    /**
+     * Sign and send a batch of transactions. Returns signatures on success, null on failure.
+     * Reused by both fee config and launch phases.
+     */
+    async function signTransactionBatch(label) {
+      var btn = document.getElementById("sign-btn");
+      var bar = document.getElementById("progress-bar");
+      var fill = document.getElementById("progress-fill");
+      btn.disabled = true;
+      btn.textContent = "Signing " + label + "...";
+      bar.classList.remove("hidden");
+
+      var connection = new Connection(rpcUrl, "confirmed");
+      var signatures = [];
+
+      for (var i = 0; i < currentTransactions.length; i++) {
+        fill.style.width = ((i / currentTransactions.length) * 100) + "%";
+        try {
+          var txBytes = decodeTx(currentTransactions[i]);
+          var signedTx;
+          try {
+            var vtx = VersionedTransaction.deserialize(txBytes);
+            signedTx = await connectedWallet.provider.signTransaction(vtx);
+          } catch (_e) {
+            var tx = Transaction.from(txBytes);
+            tx.feePayer = connectedWallet.provider.publicKey;
+            var bh = await connection.getLatestBlockhash();
+            tx.recentBlockhash = bh.blockhash;
+            signedTx = await connectedWallet.provider.signTransaction(tx);
+          }
+
+          var sig = await connection.sendRawTransaction(signedTx.serialize());
+          await connection.confirmTransaction(sig, "confirmed");
+          signatures.push(sig);
+
+          showStatus(
+            label + " tx " + (i+1) + "/" + currentTransactions.length + " confirmed. " +
+            '<a class="explorer-link" href="https://solscan.io/tx/' + sig + '" target="_blank">View on Solscan</a>',
+            "success"
+          );
+        } catch (err) {
+          showStatus(label + " tx " + (i+1) + " failed: " + (err.message || "").replace(/</g, "&lt;"), "error");
+          btn.textContent = "Retry";
+          btn.disabled = false;
+          bar.classList.add("hidden");
+          return null;
+        }
+      }
+
+      fill.style.width = "100%";
+      bar.classList.add("hidden");
+      return signatures;
+    }
+
+    /* ===== Shared wallet connect dispatcher ===== */
+
+    function connectWallet(name, provider) {
+      if (isLaunchMode) {
+        connectWalletLaunch(name, provider);
+      } else {
+        connectWalletSign(name, provider);
+      }
+    }
+
+    /* ===== Init ===== */
+
+    async function initSignMode() {
       try {
         var resp = await fetch(API_BASE + "/api/sign/" + sessionId);
         if (!resp.ok) throw new Error("Session not found or expired.");
@@ -406,7 +636,30 @@
       }
     }
 
-    init();
+    async function initLaunchMode() {
+      document.getElementById("page-subtitle").textContent = "Token Launcher";
+      document.getElementById("phase-indicator").classList.remove("hidden");
+      updatePhaseIndicator("connect");
+
+      try {
+        var resp = await fetch(API_BASE + "/api/launch/" + sessionId);
+        if (!resp.ok) throw new Error("Session not found or expired.");
+        var data = await resp.json();
+        rpcUrl = data.rpcUrl || rpcUrl;
+        renderMeta(data.meta);
+        renderWallets();
+      } catch (err) {
+        showStatus("Failed to load session: " + err.message, "error");
+        document.getElementById("wallet-card").classList.add("hidden");
+        document.getElementById("meta-card").classList.add("hidden");
+      }
+    }
+
+    if (isLaunchMode) {
+      initLaunchMode();
+    } else {
+      initSignMode();
+    }
   </script>
 </body>
 </html>

@@ -9,6 +9,7 @@ import { registerOpenSigningPage } from "./tools/trading/sign.js";
 import { registerMetadata } from "./tools/tokens/metadata.js";
 import { registerNewMints } from "./tools/tokens/new-mints.js";
 import { registerLaunch } from "./tools/tokens/launch.js";
+import { registerOpenLaunchPage } from "./tools/tokens/open-launch-page.js";
 import { registerClaimFees } from "./tools/fees/claim.js";
 
 const SERVER_NAME = "pumpfun-mcp";
@@ -25,6 +26,7 @@ function registerAllTools(server: McpServer): void {
   registerMetadata(server);
   registerNewMints(server);
   registerLaunch(server);
+  registerOpenLaunchPage(server);
   registerClaimFees(server);
 }
 
