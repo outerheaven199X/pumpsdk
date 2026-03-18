@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign Transaction — Pump.fun MCP</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #0d0d0f;
+      --bg-card: #1a1a1e;
+      --text: #f5f5ee;
+      --text-muted: rgba(245, 245, 238, 0.5);
+      --text-light: rgba(245, 245, 238, 0.3);
+      --accent: #00e87b;
+      --accent-hover: #00cc6a;
+      --accent-text: #0d0d0f;
+      --border: rgba(245, 245, 238, 0.08);
+      --error-bg: rgba(214, 43, 43, 0.12);
+      --error-text: #f87171;
+      --success-bg: rgba(0, 232, 123, 0.1);
+      --success-text: #00e87b;
+      --radius: 16px;
+      --radius-sm: 10px;
+      --radius-pill: 9999px;
+    }
+
+    body {
+      font-family: 'Nunito', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      background-image: radial-gradient(rgba(245, 245, 238, 0.06) 1px, transparent 1px);
+      background-size: 20px 20px;
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(ellipse at 50% 0%, rgba(0, 232, 123, 0.06) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    .container { max-width: 500px; width: 100%; padding: 1.5rem; }
+
+    .logo { text-align: center; margin-bottom: 1.5rem; }
+    .logo h1 { font-size: 2.2rem; font-weight: 700; }
+    .logo .pump { color: var(--accent); }
+    .logo .sub {
+      display: block; font-size: 0.8rem; font-weight: 500;
+      color: var(--text-light); letter-spacing: 0.12em;
+      text-transform: uppercase; margin-top: 0.35rem;
+    }
+
+    .card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 1.25rem;
+      margin-bottom: 0.75rem; box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+      transition: border-color 0.2s;
+    }
+    .card:hover { border-color: rgba(0, 232, 123, 0.15); }
+    .card h2 {
+      font-size: 0.9rem; text-transform: uppercase;
+      letter-spacing: 0.08em; color: var(--text-muted);
+      margin-bottom: 0.75rem; font-weight: 600;
+    }
+
+    .meta-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 0.35rem 0; border-bottom: 1px solid var(--border);
+    }
+    .meta-row:last-child { border-bottom: none; }
+    .meta-label { color: var(--text-muted); font-size: 1.05rem; }
+    .meta-value { color: var(--text); font-weight: 600; font-size: 1.05rem; }
+
+    .wallets { display: flex; flex-direction: column; gap: 0.5rem; }
+
+    .wallet-btn {
+      display: flex; align-items: center; gap: 0.75rem;
+      padding: 0.7rem 1rem; background: var(--bg);
+      border: 1px solid var(--border); border-radius: var(--radius-sm);
+      color: var(--text); font-family: inherit; font-size: 1.1rem;
+      font-weight: 600; cursor: pointer; transition: border-color 0.15s;
+    }
+    .wallet-btn:hover { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(0,232,123,0.2); }
+    .wallet-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+    .wallet-btn img { width: 28px; height: 28px; border-radius: 6px; }
+
+    .sign-btn {
+      width: 100%; padding: 0.9rem; background: var(--accent);
+      border: none; border-radius: var(--radius-pill);
+      color: var(--accent-text); font-family: inherit;
+      font-size: 1.2rem; font-weight: 700; cursor: pointer;
+      transition: background 0.15s, transform 0.1s; margin-top: 0.25rem;
+    }
+    .sign-btn:hover { background: var(--accent-hover); }
+    .sign-btn:active { transform: scale(0.98); }
+    .sign-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    .status {
+      text-align: center; padding: 0.85rem 1rem;
+      border-radius: var(--radius-sm); margin-top: 0.75rem;
+      font-size: 1rem; font-weight: 500;
+    }
+    .status.info { background: rgba(100,140,255,0.1); color: #7c9cff; }
+    .status.success { background: var(--success-bg); color: var(--success-text); }
+    .status.error { background: var(--error-bg); color: var(--error-text); }
+
+    .progress-bar {
+      width: 100%; height: 4px; background: var(--border);
+      border-radius: 2px; overflow: hidden; margin-top: 0.5rem;
+    }
+    .progress-fill {
+      height: 100%; background: var(--accent);
+      border-radius: 2px; transition: width 0.3s;
+    }
+
+    .explorer-link {
+      display: inline-block; margin-top: 0.25rem;
+      color: var(--accent); font-weight: 600; text-decoration: none;
+    }
+    .explorer-link:hover { text-decoration: underline; }
+
+    .hidden { display: none; }
+
+    #no-wallets {
+      text-align: center; color: var(--text-muted);
+      padding: 1rem; font-size: 1.05rem; line-height: 1.6;
+    }
+    #no-wallets a { color: var(--accent); font-weight: 600; text-decoration: none; }
+    #no-wallets a:hover { text-decoration: underline; }
+
+    .powered-by {
+      text-align: center; margin-top: 1.25rem;
+      font-size: 0.85rem; color: var(--text-light);
+    }
+    .powered-by a { color: var(--text-muted); text-decoration: none; font-weight: 600; }
+    .powered-by a:hover { color: var(--accent); }
+
+    .spinner {
+      display: inline-block; width: 18px; height: 18px;
+      border: 2px solid var(--border); border-top-color: var(--accent);
+      border-radius: 50%; animation: spin 0.6s linear infinite;
+      vertical-align: middle; margin-right: 0.5rem;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo">
+      <h1><span class="pump">Pump</span>.fun MCP</h1>
+      <span class="sub">Transaction Signer</span>
+    </div>
+
+    <div class="card" id="meta-card">
+      <h2>Details</h2>
+      <div id="meta-rows"></div>
+    </div>
+
+    <div class="card" id="wallet-card">
+      <h2>Connect Wallet</h2>
+      <div class="wallets" id="wallet-list"></div>
+      <div id="no-wallets" class="hidden">
+        No Solana wallets detected.<br>
+        Install one to continue:<br>
+        <a href="https://phantom.app" target="_blank">Phantom</a> ·
+        <a href="https://solflare.com" target="_blank">Solflare</a> ·
+        <a href="https://backpack.app" target="_blank">Backpack</a> ·
+        <a href="https://trustwallet.com" target="_blank">Trust Wallet</a> ·
+        <a href="https://okx.com/web3" target="_blank">OKX</a>
+      </div>
+    </div>
+
+    <div class="card hidden" id="sign-card">
+      <h2 id="sign-heading">Sign & Send</h2>
+      <p id="sign-description" style="color:var(--text-muted); margin-bottom:0.75rem; font-size:1rem;"></p>
+      <button class="sign-btn" id="sign-btn">Sign & Send</button>
+      <div class="progress-bar hidden" id="progress-bar">
+        <div class="progress-fill" id="progress-fill" style="width:0%"></div>
+      </div>
+    </div>
+
+    <div id="status-area"></div>
+
+    <div class="powered-by">
+      Powered by <a href="https://pump.fun" target="_blank">Pump.fun</a>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/@solana/web3.js@1.98.0/lib/index.iife.min.js"></script>
+  <script>
+    /* Signing page for PumpFun MCP — pre-built transaction signing only. */
+
+    var API_BASE = window.location.origin;
+    var Connection = solanaWeb3.Connection;
+    var Transaction = solanaWeb3.Transaction;
+    var VersionedTransaction = solanaWeb3.VersionedTransaction;
+
+    var connectedWallet = null;
+    var rpcUrl = "https://api.mainnet-beta.solana.com";
+    var currentTransactions = [];
+    var sessionId = window.location.pathname.split("/sign/")[1];
+
+    var KNOWN_WALLETS = [
+      { name: "Phantom",       check: function() { return window.phantom?.solana; },                        icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128' fill='none'%3E%3Crect width='128' height='128' rx='26' fill='%23AB9FF2'/%3E%3Cpath d='M110.584 64.914h-7.117c0-24.84-20.321-44.97-45.4-44.97-24.772 0-44.9 19.693-45.39 44.144-.503 25.097 20.57 46.796 45.834 46.796h2.049c22.212 0 42.127-14.478 49.085-35.608a4.288 4.288 0 00-4.06-5.768h-.001zm-73.894 7.16a5.393 5.393 0 01-5.4 5.38 5.393 5.393 0 01-5.4-5.38 5.393 5.393 0 015.4-5.38 5.393 5.393 0 015.4 5.38zm22.2 0a5.393 5.393 0 01-5.4 5.38 5.393 5.393 0 01-5.4-5.38 5.393 5.393 0 015.4-5.38 5.393 5.393 0 015.4 5.38z' fill='%23FFF'/%3E%3C/svg%3E" },
+      { name: "Solflare",      check: function() { return window.solflare; },                               icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Crect width='128' height='128' rx='26' fill='%23FC7227'/%3E%3Cpath d='M64 28l28 36-28 36-28-36z' fill='%23FFF'/%3E%3C/svg%3E" },
+      { name: "Backpack",      check: function() { return window.backpack; },                               icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Crect width='128' height='128' rx='26' fill='%23E33E3F'/%3E%3Cpath d='M44 48h40v40H44z' rx='8' fill='%23FFF'/%3E%3Cpath d='M52 36h24v16H52z' rx='4' fill='%23FFF'/%3E%3C/svg%3E" },
+      { name: "Coinbase",      check: function() { return window.coinbaseSolana; },                         icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Crect width='128' height='128' rx='26' fill='%230052FF'/%3E%3Ccircle cx='64' cy='64' r='32' fill='%23FFF'/%3E%3Ccircle cx='64' cy='64' r='16' fill='%230052FF'/%3E%3C/svg%3E" },
+      { name: "Trust Wallet",  check: function() { return window.trustwallet?.solana; },                    icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Crect width='128' height='128' rx='26' fill='%230500FF'/%3E%3Cpath d='M64 28c16 12 28 8 28 8s-4 40-28 64C40 76 36 36 36 36s12 4 28-8z' fill='%23FFF'/%3E%3C/svg%3E" },
+      { name: "Brave",         check: function() { return window.braveSolana || window.brave?.solana; },    icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Crect width='128' height='128' rx='26' fill='%23FB542B'/%3E%3Cpath d='M64 24l28 16v40L64 104 36 80V40z' fill='%23FFF'/%3E%3C/svg%3E" },
+      { name: "Exodus",        check: function() { return window.exodus?.solana; },                         icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Crect width='128' height='128' rx='26' fill='%231F1B4D'/%3E%3Cpath d='M36 44h56l-20 20 20 20H36l20-20z' fill='%238B6CDF'/%3E%3C/svg%3E" },
+      { name: "OKX",           check: function() { return window.okxwallet?.solana; },                      icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Crect width='128' height='128' rx='26' fill='%23000'/%3E%3Crect x='28' y='28' width='28' height='28' rx='4' fill='%23FFF'/%3E%3Crect x='72' y='28' width='28' height='28' rx='4' fill='%23FFF'/%3E%3Crect x='50' y='50' width='28' height='28' rx='4' fill='%23FFF'/%3E%3Crect x='28' y='72' width='28' height='28' rx='4' fill='%23FFF'/%3E%3Crect x='72' y='72' width='28' height='28' rx='4' fill='%23FFF'/%3E%3C/svg%3E" },
+    ];
+
+    function decodeBase58(str) {
+      var ALPHABET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+      var bytes = [0];
+      for (var ci = 0; ci < str.length; ci++) {
+        var idx = ALPHABET.indexOf(str[ci]);
+        if (idx === -1) throw new Error("Invalid base58 character: " + str[ci]);
+        var carry = idx;
+        for (var j = 0; j < bytes.length; j++) {
+          carry += bytes[j] * 58;
+          bytes[j] = carry & 0xff;
+          carry >>= 8;
+        }
+        while (carry > 0) { bytes.push(carry & 0xff); carry >>= 8; }
+      }
+      for (var li = 0; li < str.length; li++) {
+        if (str[li] !== "1") break;
+        bytes.push(0);
+      }
+      return new Uint8Array(bytes.reverse());
+    }
+
+    /** Decode a base64 string to Uint8Array. */
+    function decodeBase64(str) {
+      var raw = atob(str);
+      var bytes = new Uint8Array(raw.length);
+      for (var i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
+      return bytes;
+    }
+
+    /** Detect encoding and decode transaction bytes. */
+    function decodeTx(str) {
+      var looksBase64 = /^[A-Za-z0-9+/=]+$/.test(str) && str.length > 100
+        && (str.indexOf("+") !== -1 || str.indexOf("/") !== -1 || str.endsWith("="));
+      if (looksBase64) {
+        try { return decodeBase64(str); } catch (_e) { /* fall through to base58 */ }
+      }
+      return decodeBase58(str);
+    }
+
+    function showStatus(message, type) {
+      var area = document.getElementById("status-area");
+      var div = document.createElement("div");
+      div.className = "status " + type;
+      div.innerHTML = message;
+      area.appendChild(div);
+    }
+
+    function renderMeta(meta) {
+      var rows = document.getElementById("meta-rows");
+      if (!meta || Object.keys(meta).length === 0) {
+        rows.innerHTML = '<div class="meta-row"><span class="meta-label">Signing transactions for Pump.fun</span></div>';
+        return;
+      }
+      rows.innerHTML = "";
+      for (var key in meta) {
+        if (!meta.hasOwnProperty(key)) continue;
+        var row = document.createElement("div");
+        row.className = "meta-row";
+        var label = document.createElement("span");
+        label.className = "meta-label";
+        label.textContent = key;
+        var val = document.createElement("span");
+        val.className = "meta-value";
+        val.textContent = meta[key];
+        row.appendChild(label);
+        row.appendChild(val);
+        rows.appendChild(row);
+      }
+    }
+
+    function renderWallets() {
+      var list = document.getElementById("wallet-list");
+      var noWallets = document.getElementById("no-wallets");
+      var found = 0;
+      for (var wi = 0; wi < KNOWN_WALLETS.length; wi++) {
+        var wallet = KNOWN_WALLETS[wi];
+        var provider = wallet.check();
+        if (!provider) continue;
+        found++;
+        var btn = document.createElement("button");
+        btn.className = "wallet-btn";
+        btn.innerHTML = '<img src="' + wallet.icon + '" alt="' + wallet.name + '"> ' + wallet.name;
+        btn.addEventListener("click", (function(w, p) {
+          return function() { connectWallet(w.name, p); };
+        })(wallet, provider));
+        list.appendChild(btn);
+      }
+      if (found === 0) noWallets.classList.remove("hidden");
+    }
+
+    async function connectWallet(name, provider) {
+      try {
+        document.querySelectorAll(".wallet-btn").forEach(function(b) { b.disabled = true; });
+        var resp = await provider.connect();
+        var pubkey = (resp.publicKey || provider.publicKey).toString();
+        connectedWallet = { name: name, provider: provider, pubkey: pubkey };
+
+        document.getElementById("wallet-card").innerHTML =
+          '<h2>Connected</h2><div class="meta-row"><span class="meta-label">' + name +
+          '</span><span class="meta-value">' + pubkey.slice(0,4) + '...' + pubkey.slice(-4) + '</span></div>';
+
+        var txCount = currentTransactions.length;
+        var card = document.getElementById("sign-card");
+        card.classList.remove("hidden");
+        document.getElementById("sign-description").textContent = txCount + " transaction" + (txCount > 1 ? "s" : "") + " to sign.";
+        document.getElementById("sign-btn").onclick = signAndSend;
+      } catch (err) {
+        showStatus("Wallet connection failed: " + err.message, "error");
+        document.querySelectorAll(".wallet-btn").forEach(function(b) { b.disabled = false; });
+      }
+    }
+
+    async function signAndSend() {
+      var btn = document.getElementById("sign-btn");
+      var bar = document.getElementById("progress-bar");
+      var fill = document.getElementById("progress-fill");
+      btn.disabled = true;
+      btn.textContent = "Signing...";
+      bar.classList.remove("hidden");
+
+      var connection = new Connection(rpcUrl, "confirmed");
+      var signatures = [];
+
+      for (var i = 0; i < currentTransactions.length; i++) {
+        fill.style.width = ((i / currentTransactions.length) * 100) + "%";
+        try {
+          var txBytes = decodeTx(currentTransactions[i]);
+          var signedTx;
+          try {
+            var vtx = VersionedTransaction.deserialize(txBytes);
+            signedTx = await connectedWallet.provider.signTransaction(vtx);
+          } catch (_e) {
+            var tx = Transaction.from(txBytes);
+            tx.feePayer = connectedWallet.provider.publicKey;
+            var bh = await connection.getLatestBlockhash();
+            tx.recentBlockhash = bh.blockhash;
+            signedTx = await connectedWallet.provider.signTransaction(tx);
+          }
+
+          var sig = await connection.sendRawTransaction(signedTx.serialize());
+          await connection.confirmTransaction(sig, "confirmed");
+          signatures.push(sig);
+
+          showStatus(
+            "Transaction " + (i+1) + "/" + currentTransactions.length + " confirmed. " +
+            '<a class="explorer-link" href="https://solscan.io/tx/' + sig + '" target="_blank">View on Solscan</a>',
+            "success"
+          );
+        } catch (err) {
+          showStatus("Transaction " + (i+1) + " failed: " + (err.message || "").replace(/</g, "&lt;"), "error");
+          btn.textContent = "Retry";
+          btn.disabled = false;
+          return;
+        }
+      }
+
+      fill.style.width = "100%";
+      bar.classList.add("hidden");
+      btn.textContent = "All signed!";
+
+      try {
+        await fetch(API_BASE + "/api/sign/" + sessionId + "/complete", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ signatures: signatures }),
+        });
+      } catch (_e) { /* best-effort */ }
+    }
+
+    async function init() {
+      try {
+        var resp = await fetch(API_BASE + "/api/sign/" + sessionId);
+        if (!resp.ok) throw new Error("Session not found or expired.");
+        var data = await resp.json();
+        rpcUrl = data.rpcUrl || rpcUrl;
+        currentTransactions = data.transactions;
+        renderMeta(data.meta);
+        renderWallets();
+      } catch (err) {
+        showStatus("Failed to load session: " + err.message, "error");
+        document.getElementById("wallet-card").classList.add("hidden");
+        document.getElementById("meta-card").classList.add("hidden");
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>

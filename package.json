@@ -1,0 +1,22 @@
+{
+  "name": "pumpfun-mcp",
+  "version": "1.0.0",
+  "description": "MCP server for Pump.fun token trading and management",
+  "type": "module",
+  "main": "dist/src/index.js",
+  "scripts": {
+    "build": "tsc && node -e \"const{cpSync,mkdirSync}=require('fs');mkdirSync('dist/src/signing',{recursive:true});cpSync('src/signing/page.html','dist/src/signing/page.html')\"",
+    "start": "node dist/src/index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.1",
+    "@solana/web3.js": "^1.98.4",
+    "express": "^5.1.0",
+    "zod": "^3.25.7"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.2",
+    "@types/node": "^22.15.17",
+    "typescript": "^5.8.3"
+  }
+}
