@@ -1,4 +1,4 @@
-/** Interactive setup wizard for configuring PumpFun MCP in AI clients. */
+/** Interactive setup wizard for configuring PumpSDK MCP in AI clients. */
 
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { dirname } from "node:path";
@@ -25,7 +25,7 @@ async function ask(question: string): Promise<string> {
  * Detects MCP clients and writes configuration.
  */
 export async function runSetup(): Promise<void> {
-  console.log("PumpFun MCP — Setup Wizard\n");
+  console.log("PumpSDK — Setup Wizard\n");
 
   const rpcUrl = await ask("Solana RPC URL (press Enter for default mainnet): ");
   const solanaRpc = rpcUrl || "https://api.mainnet-beta.solana.com";
@@ -73,7 +73,7 @@ function writeClientConfig(configPath: string, rpcUrl: string): void {
   }
 
   const mcpServers = (config.mcpServers ?? {}) as Record<string, unknown>;
-  mcpServers["pumpfun-mcp"] = {
+  mcpServers["pumpsdk"] = {
     type: "stdio",
     command: "node",
     args: ["dist/src/index.js"],
@@ -95,7 +95,7 @@ Add this to your MCP config file:
 
 {
   "mcpServers": {
-    "pumpfun-mcp": {
+    "pumpsdk": {
       "type": "stdio",
       "command": "node",
       "args": ["dist/src/index.js"],

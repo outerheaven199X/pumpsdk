@@ -13,6 +13,8 @@ import { generateTokenImage, buildImagePrompt } from "../client/imagegen.js";
 import { uploadToIpfs } from "../client/ipfs.js";
 import { SIGNING_PORT, WALLET_PLACEHOLDER, ALLOWED_ORIGIN, CSRF_TOKEN_BYTES } from "../utils/constants.js";
 
+const keypairStore = new Map<string, Uint8Array>();
+
 /** Pre-built signing session — transactions already exist. */
 interface SigningSession {
   type: "sign";
@@ -244,8 +246,12 @@ function registerLaunchRoutes(app: express.Express, pageHtml: string): void {
     }
 
     try {
-      const secretBytes = Buffer.from(session.mintKeypairSecret, "base64");
-      const mintKeypair = Keypair.fromSecretKey(new Uint8Array(secretBytes));
+      const secretKey = keypairStore.get(req.params.sessionId);
+      if (!secretKey) {
+        res.status(410).json({ error: "Session keypair expired." });
+        return;
+      }
+      const mintKeypair = Keypair.fromSecretKey(new Uint8Array(secretKey));
 
       const result = await buildLaunchTx(
         wallet,
@@ -337,6 +343,7 @@ function registerLaunchRoutes(app: express.Express, pageHtml: string): void {
     }
     session.signatures.push(...(req.body.signatures || []));
     session.phase = "complete";
+    keypairStore.delete(req.params.sessionId);
     await setSession(req.params.sessionId, session);
     res.json({ ok: true });
   });
@@ -353,10 +360,11 @@ export function startSigningServer(): void {
   const pages = loadPages();
   const app = express();
   app.use(express.json());
+  app.use("/static", express.static(resolve(dirname(fileURLToPath(import.meta.url)), ".")));
   registerRoutes(app, pages);
 
   app.listen(SIGNING_PORT, "127.0.0.1", () => {
-    console.error(`[pumpfun-mcp] Signing server at http://localhost:${SIGNING_PORT}`);
+    console.error(`[pumpsdk] Signing server at http://localhost:${SIGNING_PORT}`);
   });
 }
 
@@ -423,7 +431,7 @@ export async function createLaunchSession(params: LaunchSessionParams): Promise<
 
   const mintKeypair = Keypair.generate();
   const mintPublicKey = mintKeypair.publicKey.toBase58();
-  const mintKeypairSecret = Buffer.from(mintKeypair.secretKey).toString("base64");
+  keypairStore.set(id, mintKeypair.secretKey);
 
   await setSession(id, {
     type: "launch",
@@ -443,7 +451,7 @@ export async function createLaunchSession(params: LaunchSessionParams): Promise<
     phase: "connect",
     wallet: null,
     mintPublicKey,
-    mintKeypairSecret,
+    mintKeypairSecret: "IN_MEMORY",
     feeConfigTxs: [],
     launchTx: null,
     signatures: [],
@@ -589,8 +597,12 @@ function registerScoutRoutes(app: express.Express, scoutPageHtml: string): void 
         imageUrl: session.imageUrl || "",
       });
 
-      const secretBytes = Buffer.from(session.mintKeypairSecret, "base64");
-      const mintKeypair = Keypair.fromSecretKey(new Uint8Array(secretBytes));
+      const secretKey = keypairStore.get(req.params.sessionId);
+      if (!secretKey) {
+        res.status(410).json({ error: "Session keypair expired." });
+        return;
+      }
+      const mintKeypair = Keypair.fromSecretKey(new Uint8Array(secretKey));
       const buySol = typeof initialBuySol === "number" ? initialBuySol : 0;
 
       const result = await buildLaunchTx(
@@ -681,6 +693,7 @@ function registerScoutRoutes(app: express.Express, scoutPageHtml: string): void 
     }
     session.signatures.push(...(req.body.signatures || []));
     session.phase = "complete";
+    keypairStore.delete(req.params.sessionId);
     await setSession(req.params.sessionId, session);
     res.json({ ok: true });
   });
@@ -714,7 +727,7 @@ export async function createScoutSession(params: ScoutSessionParams = {}): Promi
 
   const mintKeypair = Keypair.generate();
   const mintPublicKey = mintKeypair.publicKey.toBase58();
-  const mintKeypairSecret = Buffer.from(mintKeypair.secretKey).toString("base64");
+  keypairStore.set(id, mintKeypair.secretKey);
 
   const tokenName = params.tokenName || "";
   const tokenSymbol = params.tokenSymbol || "";
@@ -751,7 +764,7 @@ export async function createScoutSession(params: ScoutSessionParams = {}): Promi
     phase: "preview",
     wallet: null,
     mintPublicKey,
-    mintKeypairSecret,
+    mintKeypairSecret: "IN_MEMORY",
     metadataUri: null,
     initialBuySol: 0,
     signatures: [],

@@ -8,7 +8,7 @@ const FAKE_METADATA_URI = "https://arweave.net/test-metadata-uri";
 const FAKE_WALLET = "DevnetWa11etXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";
 
 async function runDryRun(): Promise<void> {
-  console.log("=== PumpAgent Multi-Phase Launch Dry Run ===\n");
+  console.log("=== PumpSDK Multi-Phase Launch Dry Run ===\n");
 
   /* Step 1: Create a launch session */
   console.log("1. Creating launch session...");

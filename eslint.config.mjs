@@ -1,4 +1,4 @@
-/** Flat ESLint config for pumpfun-mcp. */
+/** Flat ESLint config for pumpsdk. */
 import tsPlugin from "@typescript-eslint/eslint-plugin";
 import tsParser from "@typescript-eslint/parser";
 

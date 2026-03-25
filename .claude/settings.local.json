@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "Bash(grep -r \"signature\\\\|sign\" /c/Users/npitt/Desktop/bagshackathon/src --include=\"*.ts\" ! -path \"*/node_modules/*\")",
+      "Bash(xargs ls:*)",
+      "Bash(ls -la \"C:\\\\Users\\\\npitt\\\\Desktop\\\\pumpfun\\\\src\\\\signing\"\" 2>/dev/null || find \"C:UsersnpittDesktoppumpfunsrcsigning \" -type f)",
+      "WebFetch(domain:pumpportal.fun)",
+      "WebFetch(domain:pump.fun)",
+      "WebFetch(domain:deepwiki.com)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:www.npmjs.com)",
+      "Bash(npm install:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npm run:*)",
+      "Bash(npx tsx:*)",
+      "Bash(node -e \"const{cpSync,mkdirSync}=require\\(''fs''\\);mkdirSync\\(''dist/src/signing'',{recursive:true}\\);cpSync\\(''src/signing/page.html'',''dist/src/signing/page.html''\\)\")",
+      "Bash(node --env-file=.env dist/tests/dry-run.js)",
+      "Bash(node --env-file=.env -e \":*)"
+    ]
+  }
+}

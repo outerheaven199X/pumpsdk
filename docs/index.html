@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>pumpfun-mcp — Pump.fun MCP Server Documentation</title>
-  <meta name="description" content="Documentation for pumpfun-mcp: a Model Context Protocol server providing 30+ tools for Solana token trading, launching, fee management, analytics, and AI scout on Pump.fun.">
+  <title>pumpsdk — Pump.fun MCP Server Documentation</title>
+  <meta name="description" content="Documentation for pumpsdk: a Model Context Protocol server providing 30+ tools for Solana token trading, launching, fee management, analytics, and AI scout on Pump.fun.">
   <style>
     :root {
       --bg: #0d0d0f;
@@ -438,12 +438,12 @@
   <button class="menu-toggle" aria-label="Toggle sidebar" onclick="document.querySelector('.sidebar').classList.toggle('open')">&#9776;</button>
   <a href="#" class="header-brand">
     <span class="logo">P</span>
-    pumpfun-mcp
+    pumpsdk
   </a>
   <span class="header-version">v2.0.0</span>
   <nav class="header-links">
-    <a href="https://github.com/pumpfun/pumpfun-mcp">GitHub</a>
-    <a href="https://www.npmjs.com/package/pumpfun-mcp">npm</a>
+    <a href="https://github.com/pumpfun/pumpsdk">GitHub</a>
+    <a href="https://www.npmjs.com/package/pumpsdk">npm</a>
     <a href="https://pump.fun">Pump.fun</a>
   </nav>
 </header>
@@ -485,12 +485,12 @@
 
   <!-- ── Getting Started ── -->
   <section class="section" id="getting-started">
-    <h1>pumpfun-mcp</h1>
+    <h1>pumpsdk</h1>
     <p class="lead">A Model Context Protocol server that gives AI assistants 35 tools for launching tokens, trading, managing creator fees, real-time streaming, analytics, and autonomous scouting on Pump.fun.</p>
 
     <h2>Quick Start</h2>
     <p>Install and run with a single command &mdash; no cloning required:</p>
-    <pre><code>npx pumpfun-mcp</code></pre>
+    <pre><code>npx pumpsdk</code></pre>
 
     <h3>Environment Variables</h3>
     <p>Create a <code>.env</code> file or export these before running:</p>
@@ -514,7 +514,7 @@
   "mcpServers": {
     "pumpfun": {
       "command": "npx",
-      "args": ["pumpfun-mcp"],
+      "args": ["pumpsdk"],
       "env": {
         "SOLANA_RPC_URL": "https://your-rpc-endpoint.com"
       }
@@ -528,7 +528,7 @@
   "mcpServers": {
     "pumpfun": {
       "command": "npx",
-      "args": ["pumpfun-mcp"],
+      "args": ["pumpsdk"],
       "env": {
         "SOLANA_RPC_URL": "https://your-rpc-endpoint.com",
         "FAL_API_KEY": "your-fal-key",

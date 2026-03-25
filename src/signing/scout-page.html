@@ -2,6 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; connect-src 'self' https://api.mainnet-beta.solana.com https://api.devnet.solana.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' https://*.fal.media data:;">
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Scout Launch — Pump.fun MCP</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -456,7 +457,7 @@
       <div id="status-area"></div>
     </div>
 
-    <script src="https://unpkg.com/@solana/web3.js@1.98.0/lib/index.iife.min.js"></script>
+    <script src="/static/solana-web3.js"></script>
     <script>
       var solanaWeb3 = window.solanaWeb3;
       var Connection = solanaWeb3.Connection;
@@ -558,6 +559,13 @@
       /* ===== Utilities ===== */
 
       function showStatus(msg, type) {
+        var area = document.getElementById("status-area");
+        var div = document.createElement("div");
+        div.className = "status " + type;
+        div.textContent = msg;
+        area.appendChild(div);
+      }
+      function showStatusHtml(msg, type) {
         var area = document.getElementById("status-area");
         var div = document.createElement("div");
         div.className = "status " + type;
@@ -715,7 +723,7 @@
           b.disabled = true;
         });
         clearStatus();
-        showStatus('<span class="spinner"></span> Connecting wallet...', "info");
+        showStatusHtml('<span class="spinner"></span> Connecting wallet...', "info");
 
         try {
           var resp = await provider.connect();
@@ -723,7 +731,7 @@
           connectedWallet = { name: name, provider: provider, pubkey: pubkey };
 
           clearStatus();
-          showStatus('<span class="spinner"></span> Building launch transaction...', "info");
+          showStatusHtml('<span class="spinner"></span> Building launch transaction...', "info");
 
           var approveResp = await fetch(API_BASE + "/api/scout/" + SESSION_ID + "/approve", {
             method: "POST",
@@ -788,7 +796,7 @@
             await connection.confirmTransaction(sig, "confirmed");
             signatures.push(sig);
 
-            showStatus(
+            showStatusHtml(
               phase +
                 " tx " +
                 (i + 1) +

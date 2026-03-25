@@ -1,4 +1,5 @@
-/** PumpFun MCP server — token trading, launching, and fee claiming on Pump.fun via MCP. */
+#!/usr/bin/env node
+/** PumpSDK MCP server — token trading, launching, and fee claiming on Pump.fun via MCP. */
 
 import { fileURLToPath } from "node:url";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -9,7 +10,7 @@ import { registerAllResources } from "./resources/_registry.js";
 import { registerAllPrompts } from "./prompts/_registry.js";
 import { SERVER_INSTRUCTIONS } from "./server-instructions.js";
 
-const SERVER_NAME = "pumpfun-mcp";
+const SERVER_NAME = "pumpsdk";
 const SERVER_VERSION = "2.0.0";
 
 /**
@@ -42,7 +43,7 @@ const thisFile = fileURLToPath(import.meta.url);
 const entryFile = process.argv[1];
 if (entryFile && thisFile.includes(entryFile.replace(/\\/g, "/"))) {
   main().catch((err) => {
-    console.error("[pumpfun-mcp] Fatal error:", err);
+    console.error("[pumpsdk] Fatal error:", err);
     process.exit(1);
   });
 }

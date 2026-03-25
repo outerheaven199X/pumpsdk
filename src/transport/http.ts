@@ -62,7 +62,7 @@ export async function startHttp(port?: number): Promise<void> {
   app.use(bearerAuth);
 
   app.get("/health", (_req, res) => {
-    res.json({ status: "ok", server: "pumpfun-mcp", transport: "http" });
+    res.json({ status: "ok", server: "pumpsdk", transport: "http" });
   });
 
   const mcpServer = createServer();
@@ -75,8 +75,8 @@ export async function startHttp(port?: number): Promise<void> {
   await mcpServer.connect(transport);
 
   app.listen(listenPort, () => {
-    console.error(`[pumpfun-mcp] HTTP transport at http://localhost:${listenPort}`);
-    console.error(`[pumpfun-mcp] MCP endpoint: POST /mcp`);
-    console.error(`[pumpfun-mcp] Health check: GET /health`);
+    console.error(`[pumpsdk] HTTP transport at http://localhost:${listenPort}`);
+    console.error(`[pumpsdk] MCP endpoint: POST /mcp`);
+    console.error(`[pumpsdk] Health check: GET /health`);
   });
 }

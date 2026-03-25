@@ -1,10 +1,10 @@
-# PumpAgent — Hermes Handoff (Mainnet Launch Demo)
+# PumpSDK — Hermes Handoff (Mainnet Launch Demo)
 
 ## What This Repo Is
 
-PumpAgent is an MCP server that lets AI agents launch and trade Solana tokens on Pump.fun. It runs locally, exposes tools via MCP, and serves a signing page at `localhost:3142` where the user connects Phantom to sign transactions. Zero custody — no private keys touch the server.
+PumpSDK is an MCP server that lets AI agents launch and trade Solana tokens on Pump.fun. It runs locally, exposes tools via MCP, and serves a signing page at `localhost:3142` where the user connects Phantom to sign transactions. Zero custody — no private keys touch the server.
 
-**Repo:** https://github.com/outerheaven199X/pumpagent
+**Repo:** https://github.com/outerheaven199X/pumpsdk
 **Location on disk:** `C:\Users\npitt\Desktop\pumpfun`
 
 ---

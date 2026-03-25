@@ -11,5 +11,5 @@ export async function startStdio(): Promise<void> {
   const server = createServer();
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error("[pumpfun-mcp] Server started on stdio transport");
+  console.error("[pumpsdk] Server started on stdio transport");
 }

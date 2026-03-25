@@ -1,16 +1,20 @@
 {
-  "name": "pumpfun-mcp",
+  "name": "pumpsdk",
   "version": "2.0.0",
   "description": "MCP server for Pump.fun token trading and management",
   "type": "module",
   "main": "dist/src/index.js",
+  "bin": {
+    "pumpsdk": "dist/src/index.js"
+  },
   "scripts": {
-    "build": "tsc && node -e \"const{cpSync,mkdirSync}=require('fs');mkdirSync('dist/src/signing',{recursive:true});cpSync('src/signing/page.html','dist/src/signing/page.html');cpSync('src/signing/scout-page.html','dist/src/signing/scout-page.html')\"",
+    "build": "tsc && node -e \"const{cpSync,mkdirSync}=require('fs');mkdirSync('dist/src/signing',{recursive:true});cpSync('src/signing/page.html','dist/src/signing/page.html');cpSync('src/signing/scout-page.html','dist/src/signing/scout-page.html');cpSync('node_modules/@solana/web3.js/lib/index.iife.min.js','dist/src/signing/solana-web3.js')\"",
     "start": "node dist/src/index.js",
     "lint": "eslint src/",
     "lint:fix": "eslint src/ --fix",
     "format": "prettier --write src/",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.1",

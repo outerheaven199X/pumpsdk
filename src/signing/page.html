@@ -2,6 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; connect-src 'self' https://api.mainnet-beta.solana.com https://api.devnet.solana.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' https://*.fal.media data:;">
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Sign Transaction — Pump.fun MCP</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -378,7 +379,7 @@
       <div class="powered-by">Powered by <a href="https://pump.fun" target="_blank">Pump.fun</a></div>
     </div>
 
-    <script src="https://unpkg.com/@solana/web3.js@1.98.0/lib/index.iife.min.js"></script>
+    <script src="/static/solana-web3.js"></script>
     <script>
       /* Signing page for PumpFun MCP — supports both pre-built signing and multi-phase launch. */
 
@@ -512,6 +513,13 @@
       }
 
       function showStatus(message, type) {
+        var area = document.getElementById("status-area");
+        var div = document.createElement("div");
+        div.className = "status " + type;
+        div.textContent = message;
+        area.appendChild(div);
+      }
+      function showStatusHtml(message, type) {
         var area = document.getElementById("status-area");
         var div = document.createElement("div");
         div.className = "status " + type;
@@ -666,7 +674,7 @@
             await connection.confirmTransaction(sig, "confirmed");
             signatures.push(sig);
 
-            showStatus(
+            showStatusHtml(
               "Transaction " +
                 (i + 1) +
                 "/" +
@@ -720,7 +728,7 @@
             pubkey.slice(-4) +
             "</span></div>";
 
-          showStatus('<span class="spinner"></span> Building launch transaction...', "info");
+          showStatusHtml('<span class="spinner"></span> Building launch transaction...', "info");
 
           var connectResp = await fetch(API_BASE + "/api/launch/" + sessionId + "/connect", {
             method: "POST",
@@ -751,7 +759,7 @@
         var signatures = await signTransactionBatch("launch");
         if (!signatures) return;
 
-        showStatus('<span class="spinner"></span> Building fee config transactions...', "info");
+        showStatusHtml('<span class="spinner"></span> Building fee config transactions...', "info");
 
         try {
           var launchResp = await fetch(API_BASE + "/api/launch/" + sessionId + "/launch-signed", {
@@ -832,7 +840,7 @@
             await connection.confirmTransaction(sig, "confirmed");
             signatures.push(sig);
 
-            showStatus(
+            showStatusHtml(
               label +
                 " tx " +
                 (i + 1) +
