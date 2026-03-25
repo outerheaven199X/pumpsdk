@@ -1,0 +1,1059 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>pumpfun-mcp — Pump.fun MCP Server Documentation</title>
+  <meta name="description" content="Documentation for pumpfun-mcp: a Model Context Protocol server providing 30+ tools for Solana token trading, launching, fee management, analytics, and AI scout on Pump.fun.">
+  <style>
+    :root {
+      --bg: #0d0d0f;
+      --bg-sidebar: #111114;
+      --bg-card: #18181c;
+      --bg-code: #1e1e24;
+      --accent: #00e87b;
+      --accent-dim: #00c066;
+      --accent-bg: rgba(0, 232, 123, 0.08);
+      --text: #f5f5ee;
+      --text-dim: #a0a098;
+      --text-code: #c8d6e5;
+      --border: #2a2a30;
+      --border-light: #3a3a42;
+      --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --font-mono: 'SF Mono', 'Fira Code', 'Cascadia Code', Consolas, monospace;
+      --sidebar-width: 280px;
+      --header-height: 56px;
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      scroll-padding-top: calc(var(--header-height) + 24px);
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      font-size: 15px;
+    }
+
+    /* ── Header ── */
+    .header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: var(--header-height);
+      background: rgba(13, 13, 15, 0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 24px;
+      z-index: 100;
+    }
+
+    .header-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      font-size: 16px;
+      color: var(--text);
+      text-decoration: none;
+    }
+
+    .header-brand .logo {
+      width: 28px;
+      height: 28px;
+      background: var(--accent);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      color: var(--bg);
+      font-weight: 800;
+    }
+
+    .header-version {
+      font-size: 12px;
+      color: var(--text-dim);
+      background: var(--bg-card);
+      padding: 2px 8px;
+      border-radius: 4px;
+      margin-left: 8px;
+    }
+
+    .header-links {
+      margin-left: auto;
+      display: flex;
+      gap: 16px;
+      align-items: center;
+    }
+
+    .header-links a {
+      color: var(--text-dim);
+      text-decoration: none;
+      font-size: 13px;
+      transition: color 0.15s;
+    }
+
+    .header-links a:hover {
+      color: var(--accent);
+    }
+
+    .menu-toggle {
+      display: none;
+      background: none;
+      border: none;
+      color: var(--text);
+      font-size: 22px;
+      cursor: pointer;
+      margin-right: 12px;
+      padding: 4px;
+    }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      position: fixed;
+      top: var(--header-height);
+      left: 0;
+      bottom: 0;
+      width: var(--sidebar-width);
+      background: var(--bg-sidebar);
+      border-right: 1px solid var(--border);
+      overflow-y: auto;
+      padding: 20px 0;
+      z-index: 90;
+    }
+
+    .sidebar::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    .sidebar::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 4px;
+    }
+
+    .sidebar-group {
+      margin-bottom: 8px;
+    }
+
+    .sidebar-group-title {
+      display: block;
+      padding: 8px 20px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-dim);
+    }
+
+    .sidebar a {
+      display: block;
+      padding: 6px 20px 6px 28px;
+      color: var(--text-dim);
+      text-decoration: none;
+      font-size: 13.5px;
+      border-left: 2px solid transparent;
+      transition: all 0.15s;
+    }
+
+    .sidebar a:hover,
+    .sidebar a.active {
+      color: var(--accent);
+      background: var(--accent-bg);
+      border-left-color: var(--accent);
+    }
+
+    /* ── Main ── */
+    .main {
+      margin-left: var(--sidebar-width);
+      margin-top: var(--header-height);
+      padding: 40px 48px 80px;
+      max-width: 860px;
+    }
+
+    /* ── Section spacing ── */
+    .section {
+      margin-bottom: 64px;
+    }
+
+    h1 {
+      font-size: 32px;
+      font-weight: 800;
+      margin-bottom: 8px;
+      color: var(--text);
+    }
+
+    h2 {
+      font-size: 24px;
+      font-weight: 700;
+      margin-top: 48px;
+      margin-bottom: 16px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text);
+    }
+
+    h3 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-top: 32px;
+      margin-bottom: 12px;
+      color: var(--text);
+    }
+
+    h4 {
+      font-size: 15px;
+      font-weight: 600;
+      margin-top: 24px;
+      margin-bottom: 8px;
+      color: var(--accent);
+    }
+
+    p {
+      margin-bottom: 14px;
+      color: var(--text);
+    }
+
+    a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    .lead {
+      font-size: 17px;
+      color: var(--text-dim);
+      margin-bottom: 32px;
+    }
+
+    /* ── Code ── */
+    code {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      background: var(--bg-code);
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: var(--text-code);
+    }
+
+    pre {
+      background: var(--bg-code);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px 20px;
+      overflow-x: auto;
+      margin: 16px 0;
+      line-height: 1.5;
+    }
+
+    pre code {
+      background: none;
+      padding: 0;
+      font-size: 13px;
+    }
+
+    /* ── Tables ── */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0;
+      font-size: 14px;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    th {
+      font-weight: 600;
+      color: var(--text-dim);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      background: var(--bg-card);
+    }
+
+    td code {
+      font-size: 12.5px;
+    }
+
+    /* ── Lists ── */
+    ul, ol {
+      padding-left: 24px;
+      margin-bottom: 14px;
+    }
+
+    li {
+      margin-bottom: 6px;
+    }
+
+    /* ── Cards / callouts ── */
+    .callout {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--accent);
+      border-radius: 6px;
+      padding: 14px 18px;
+      margin: 16px 0;
+    }
+
+    .callout-title {
+      font-weight: 600;
+      font-size: 13px;
+      color: var(--accent);
+      margin-bottom: 4px;
+    }
+
+    .callout p {
+      margin: 0;
+      font-size: 14px;
+      color: var(--text-dim);
+    }
+
+    .tool-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+      margin: 12px 0;
+    }
+
+    .tool-item {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 12px 16px;
+      display: flex;
+      gap: 12px;
+      align-items: baseline;
+    }
+
+    .tool-name {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: var(--accent);
+      white-space: nowrap;
+      min-width: 240px;
+    }
+
+    .tool-desc {
+      font-size: 13.5px;
+      color: var(--text-dim);
+    }
+
+    .badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 4px;
+      background: var(--accent-bg);
+      color: var(--accent);
+      border: 1px solid rgba(0, 232, 123, 0.2);
+    }
+
+    .env-table td:first-child {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: var(--accent);
+      white-space: nowrap;
+    }
+
+    /* ── Flow diagram ── */
+    .flow {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      margin: 20px 0;
+      flex-wrap: wrap;
+    }
+
+    .flow-step {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px 16px;
+      font-size: 13px;
+      font-weight: 500;
+      text-align: center;
+    }
+
+    .flow-arrow {
+      color: var(--accent);
+      font-size: 18px;
+      padding: 0 8px;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 900px) {
+      .sidebar {
+        transform: translateX(-100%);
+        transition: transform 0.25s ease;
+      }
+
+      .sidebar.open {
+        transform: translateX(0);
+      }
+
+      .main {
+        margin-left: 0;
+        padding: 32px 20px 60px;
+      }
+
+      .menu-toggle {
+        display: block;
+      }
+
+      .tool-item {
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .tool-name {
+        min-width: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══ Header ═══ -->
+<header class="header">
+  <button class="menu-toggle" aria-label="Toggle sidebar" onclick="document.querySelector('.sidebar').classList.toggle('open')">&#9776;</button>
+  <a href="#" class="header-brand">
+    <span class="logo">P</span>
+    pumpfun-mcp
+  </a>
+  <span class="header-version">v2.0.0</span>
+  <nav class="header-links">
+    <a href="https://github.com/pumpfun/pumpfun-mcp">GitHub</a>
+    <a href="https://www.npmjs.com/package/pumpfun-mcp">npm</a>
+    <a href="https://pump.fun">Pump.fun</a>
+  </nav>
+</header>
+
+<!-- ═══ Sidebar ═══ -->
+<nav class="sidebar" id="sidebar">
+  <div class="sidebar-group">
+    <span class="sidebar-group-title">Overview</span>
+    <a href="#getting-started">Getting Started</a>
+    <a href="#mcp-config">MCP Configuration</a>
+  </div>
+  <div class="sidebar-group">
+    <span class="sidebar-group-title">Tools Reference</span>
+    <a href="#tools-trading">Trading</a>
+    <a href="#tools-tokens">Tokens</a>
+    <a href="#tools-analytics">Analytics</a>
+    <a href="#tools-fees">Fees</a>
+    <a href="#tools-scout">Scout</a>
+    <a href="#tools-solana">Solana</a>
+    <a href="#tools-state">State</a>
+    <a href="#tools-stream">Stream</a>
+    <a href="#tools-meta">Meta</a>
+  </div>
+  <div class="sidebar-group">
+    <span class="sidebar-group-title">Guides</span>
+    <a href="#scout-launcher">Scout Launcher</a>
+    <a href="#creator-fees">Creator Fees</a>
+    <a href="#agent-system">Agent System</a>
+  </div>
+  <div class="sidebar-group">
+    <span class="sidebar-group-title">Internals</span>
+    <a href="#architecture">Architecture</a>
+    <a href="#api-reference">API Reference</a>
+  </div>
+</nav>
+
+<!-- ═══ Main content ═══ -->
+<main class="main">
+
+  <!-- ── Getting Started ── -->
+  <section class="section" id="getting-started">
+    <h1>pumpfun-mcp</h1>
+    <p class="lead">A Model Context Protocol server that gives AI assistants 35 tools for launching tokens, trading, managing creator fees, real-time streaming, analytics, and autonomous scouting on Pump.fun.</p>
+
+    <h2>Quick Start</h2>
+    <p>Install and run with a single command &mdash; no cloning required:</p>
+    <pre><code>npx pumpfun-mcp</code></pre>
+
+    <h3>Environment Variables</h3>
+    <p>Create a <code>.env</code> file or export these before running:</p>
+    <table class="env-table">
+      <thead>
+        <tr><th>Variable</th><th>Required</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>SOLANA_RPC_URL</td><td><span class="badge">Required</span></td><td>Solana RPC endpoint (mainnet or devnet). Falls back to the public mainnet endpoint.</td></tr>
+        <tr><td>FAL_API_KEY</td><td>Optional</td><td>fal.ai API key for Nano Banana 2 Pro image generation. Required for Scout image gen.</td></tr>
+        <tr><td>ANTHROPIC_API_KEY</td><td>Optional</td><td>Anthropic API key for Claude Sonnet strategic decisions in agent mode.</td></tr>
+        <tr><td>NOUS_API_KEY</td><td>Optional</td><td>Nous Research API key for Hermes 4 fast routing in agent mode.</td></tr>
+        <tr><td>IMAGE_GEN_PROVIDER</td><td>Optional</td><td>Image gen backend: <code>fal</code> (default) or <code>replicate</code>.</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="mcp-config">MCP Configuration</h2>
+    <h3>Claude Desktop</h3>
+    <p>Add the server to your Claude Desktop MCP config at <code>claude_desktop_config.json</code>:</p>
+    <pre><code>{
+  "mcpServers": {
+    "pumpfun": {
+      "command": "npx",
+      "args": ["pumpfun-mcp"],
+      "env": {
+        "SOLANA_RPC_URL": "https://your-rpc-endpoint.com"
+      }
+    }
+  }
+}</code></pre>
+
+    <h3>With Agent Mode (Optional)</h3>
+    <p>To enable the autonomous agent layer with dual-model orchestration:</p>
+    <pre><code>{
+  "mcpServers": {
+    "pumpfun": {
+      "command": "npx",
+      "args": ["pumpfun-mcp"],
+      "env": {
+        "SOLANA_RPC_URL": "https://your-rpc-endpoint.com",
+        "FAL_API_KEY": "your-fal-key",
+        "ANTHROPIC_API_KEY": "sk-ant-...",
+        "NOUS_API_KEY": "your-nous-key"
+      }
+    }
+  }
+}</code></pre>
+
+    <div class="callout">
+      <div class="callout-title">Transactions are unsigned</div>
+      <p>Every transaction returned by the server is unsigned. The user signs with their own wallet on a localhost page &mdash; the server never holds private keys.</p>
+    </div>
+  </section>
+
+  <!-- ── Tools Reference ── -->
+  <section class="section" id="tools-reference">
+    <h2 style="margin-top:0" id="tools-trading">Trading</h2>
+    <p>Get price quotes, execute swaps, and sign transactions through the local wallet-connect page.</p>
+    <div class="tool-grid">
+      <div class="tool-item">
+        <span class="tool-name">pump_quote</span>
+        <span class="tool-desc">Get a price quote for a token trade. Returns estimated output amount, price impact, and fees without executing.</span>
+      </div>
+      <div class="tool-item">
+        <span class="tool-name">pump_trade</span>
+        <span class="tool-desc">Build a buy or sell transaction for a Pump.fun token. Returns an unsigned transaction for the signing page.</span>
+      </div>
+      <div class="tool-item">
+        <span class="tool-name">pump_open_signing_page</span>
+        <span class="tool-desc">Open the localhost signing page with pre-built transactions. The user connects their wallet and signs in-browser.</span>
+      </div>
+    </div>
+
+    <h2 id="tools-tokens">Tokens</h2>
+    <p>Launch new tokens, browse recent launches, inspect metadata, and manage token lifecycle.</p>
+    <div class="tool-grid">
+      <div class="tool-item">
+        <span class="tool-name">pump_launch</span>
+        <span class="tool-desc">Launch a new token on Pump.fun. Uploads metadata to IPFS, opens the multi-phase signing page (launch tx + fee config tx).</span>
+      </div>
+      <div class="tool-item">
+        <span class="tool-name">pump_metadata</span>
+        <span class="tool-desc">Fetch full metadata for a token by mint address &mdash; name, symbol, description, image, creator, market cap, and bonding curve state.</span>
+      </div>
+      <div class="tool-item">
+        <span class="tool-name">pump_new_mints</span>
+        <span class="tool-desc">List recently created tokens on Pump.fun, sorted by creation time.</span>
+      </div>
+      <div class="tool-item">
+        <span class="tool-name">pump_open_launch_page</span>
+        <span class="tool-desc">Open the token launch page directly for manual wallet-based launching via the localhost signing server.</span>
+      </div>
+      <div class="tool-item">
+        <span class="tool-name">pump_creator_tokens</span>
+        <span class="tool-desc">List all tokens created by a given wallet address.</span>
+      </div>
+      <div class="tool-item">
+        <span class="tool-name">pump_launch_feed</span>
+        <span class="tool-desc">Stream recent launches with market cap, volume, and graduation status for scouting opportunities.</span>
+      </div>
+      <div class="tool-item">
+        <span class="tool-name">pump_relaunch</span>
+        <span class="tool-desc">Relaunch a token with updated metadata &mdash; new description, image, or social links while preserving the same mint.</span>
+      </div>
+    </div>
+
+    <h2 id="tools-analytics">Analytics</h2>
+    <p>On-chain analytics and DexScreener integration for market intelligence.</p>
+    <div class="tool-grid">
+      <div class="tool-item">
+        <span class="tool-name">pump_bonding_curve_status</span>
+        <span class="tool-desc">Check a token's bonding curve progress, reserves, and distance to graduation (migration to DEX).</span>
+      </div>
+      <div class="tool-item">
+        <span class="tool-name">pump_top_tokens</span>
+        <span class="tool-desc">Get the top tokens on Pump.fun ranked by market cap, volume, or recent activity.</span>
+      </div>
+      <div class="tool-item">
+        <span class="tool-name">pump_token_holders</span>
+        <span class="tool-desc">Analyze the holder distribution for a token &mdash; top holders, concentration, and whale detection.</span>
+      </div>
+      <div class="tool-item">
+        <span class="tool-name">pump_latest_trades</span>
+        <span class="tool-desc">Fetch the most recent trades for a token with buy/sell type, SOL amount, and trader addresses.</span>
+      </div>
+      <div class="tool-item">
+        <span class="tool-name">pump_dexscreener_check</span>
+        <span class="tool-desc">Check if a token is listed on DexScreener and retrieve its listing status and boost information.</span>
+      </div>
+      <div class="tool-item">
+        <span class="tool-name">pump_dexscreener_orders</span>
+        <span class="tool-desc">Fetch DexScreener boost orders for a token &mdash; paid promotion status and order history.</span>
+      </div>
+      <div class="tool-item">
+        <span class="tool-name">pump_dexscreener_profile</span>
+        <span class="tool-desc">Get or check the DexScreener profile and payment status for a token listing.</span>
+      </div>
+    </div>
+
+    <h2 id="tools-fees">Fees</h2>
+    <p>Manage creator fee configuration, claiming, and multi-wallet fee splits. See the <a href="#creator-fees">Creator Fees guide</a> for details on how fees work.</p>
+    <div class="tool-grid">
+      <div class="tool-item">
+        <span class="tool-name">pump_compose_fee_config</span>
+        <span class="tool-desc">Build fee config transactions for multi-wallet fee splits (up to 10 wallets, basis points must total 10000).</span>
+      </div>
+      <div class="tool-item">
+        <span class="tool-name">pump_claim_fees</span>
+        <span class="tool-desc">Claim accumulated creator fees for a single token from the pump or meteora-dbc pool.</span>
+      </div>
+      <div class="tool-item">
+        <span class="tool-name">pump_claim_all_fees</span>
+        <span class="tool-desc">Batch claim all pending creator fees across every token you have deployed.</span>
+      </div>
+      <div class="tool-item">
+        <span class="tool-name">pump_fee_config_info</span>
+        <span class="tool-desc">View the current fee configuration for a token &mdash; recipient wallets and their percentage splits.</span>
+      </div>
+      <div class="tool-item">
+        <span class="tool-name">pump_claimable_positions</span>
+        <span class="tool-desc">List all tokens with unclaimed fees for a wallet, showing accrued amounts per pool type.</span>
+      </div>
+      <div class="tool-item">
+        <span class="tool-name">pump_partner_config</span>
+        <span class="tool-desc">View or configure partner fee sharing agreements for revenue splits with platform integrators.</span>
+      </div>
+    </div>
+
+    <h2 id="tools-scout">Scout</h2>
+    <p>AI-powered scouting, image generation, and one-click launch from generated packages.</p>
+    <div class="tool-grid">
+      <div class="tool-item">
+        <span class="tool-name">pump_scout_scan</span>
+        <span class="tool-desc">Scout trending topics from Pump.fun and news sources. Returns ready-to-launch packages with name, symbol, description, and image prompt.</span>
+      </div>
+      <div class="tool-item">
+        <span class="tool-name">pump_generate_token_image</span>
+        <span class="tool-desc">Generate a token logo from a text prompt using fal.ai Nano Banana 2 Pro or Replicate. Returns an image URL.</span>
+      </div>
+      <div class="tool-item">
+        <span class="tool-name">pump_scout_launch</span>
+        <span class="tool-desc">Launch a token from a scout-generated package. Uploads image and metadata to IPFS, then opens the launch page.</span>
+      </div>
+    </div>
+
+    <h2 id="tools-solana">Solana</h2>
+    <p>Core Solana wallet operations &mdash; balance checks, token holdings, and raw transaction submission.</p>
+    <div class="tool-grid">
+      <div class="tool-item">
+        <span class="tool-name">pump_wallet_balance</span>
+        <span class="tool-desc">Get the SOL balance for a wallet address.</span>
+      </div>
+      <div class="tool-item">
+        <span class="tool-name">pump_token_holdings</span>
+        <span class="tool-desc">List all SPL token holdings for a wallet with mint addresses and amounts.</span>
+      </div>
+      <div class="tool-item">
+        <span class="tool-name">pump_send_transaction</span>
+        <span class="tool-desc">Submit a signed transaction to the Solana network and return the transaction signature.</span>
+      </div>
+    </div>
+
+    <h2 id="tools-state">State</h2>
+    <p>Query pool state for bonding curves and liquidity pools.</p>
+    <div class="tool-grid">
+      <div class="tool-item">
+        <span class="tool-name">pump_pool</span>
+        <span class="tool-desc">Get detailed state for a single pool &mdash; reserves, fees, and bonding curve parameters.</span>
+      </div>
+      <div class="tool-item">
+        <span class="tool-name">pump_pools</span>
+        <span class="tool-desc">List all pools for a token across both bonding curve and post-migration Meteora pools.</span>
+      </div>
+    </div>
+
+    <h2 id="tools-stream">Stream (WebSocket)</h2>
+    <p>Real-time streaming via PumpPortal WebSocket with ring-buffer history and auto-reconnect.</p>
+    <div class="tool-grid">
+      <div class="tool-item">
+        <span class="tool-name">pump_subscribe_new_mints</span>
+        <span class="tool-desc">Subscribe to real-time new token creation events. Returns a stream of mint, name, symbol, and initial buy data.</span>
+      </div>
+      <div class="tool-item">
+        <span class="tool-name">pump_subscribe_trades</span>
+        <span class="tool-desc">Subscribe to real-time trade events for a token &mdash; buy/sell type, SOL amount, and trader address.</span>
+      </div>
+      <div class="tool-item">
+        <span class="tool-name">pump_graduation_watch</span>
+        <span class="tool-desc">Watch for tokens approaching graduation (bonding curve fill). Alerts when reserves near the ~85 SOL threshold.</span>
+      </div>
+    </div>
+
+    <h2 id="tools-meta">Meta</h2>
+    <p>Server introspection and agent bootstrapping.</p>
+    <div class="tool-grid">
+      <div class="tool-item">
+        <span class="tool-name">pump_tool_catalog</span>
+        <span class="tool-desc">List all available tools with descriptions and parameter schemas. Useful for agent self-discovery.</span>
+      </div>
+      <div class="tool-item">
+        <span class="tool-name">pump_agent_bootstrap</span>
+        <span class="tool-desc">Initialize the agent layer with strategy configuration and system context for autonomous operation.</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Scout Launcher ── -->
+  <section class="section" id="scout-launcher">
+    <h2 style="margin-top:0">Scout Launcher</h2>
+    <p>The Scout Launcher is an AI-assisted token creation flow that handles trend scanning, image generation, metadata upload, and multi-phase signing in a single interactive page.</p>
+
+    <h3>How It Works</h3>
+    <p>When the scout generates a launch package, it creates a session on the localhost signing server (port <code>3142</code>) and opens a dedicated scout page where the user reviews everything before committing.</p>
+
+    <h3>Scout Session Flow</h3>
+    <div class="flow">
+      <div class="flow-step">Preview</div>
+      <span class="flow-arrow">&rarr;</span>
+      <div class="flow-step">Connect Wallet</div>
+      <span class="flow-arrow">&rarr;</span>
+      <div class="flow-step">Set Dev Buy</div>
+      <span class="flow-arrow">&rarr;</span>
+      <div class="flow-step">Sign Launch Tx</div>
+      <span class="flow-arrow">&rarr;</span>
+      <div class="flow-step">Sign Fee Config</div>
+      <span class="flow-arrow">&rarr;</span>
+      <div class="flow-step">Done</div>
+    </div>
+
+    <h4>Preview Phase</h4>
+    <p>The scout page displays the AI-generated token &mdash; name, symbol, description, and logo image. The user can edit any field, regenerate the image with a custom prompt, or approve as-is.</p>
+
+    <h4>Image Generation</h4>
+    <p>Token logos are generated via <strong>fal.ai Nano Banana 2 Pro</strong>, a fast Gemini-based image model. The server constructs an optimized prompt from the token name, symbol, and description. Users can regenerate with a custom prompt from the scout page. Requires the <code>FAL_API_KEY</code> environment variable.</p>
+
+    <h4>Dev Buy Slider</h4>
+    <p>A SOL slider lets the user set their initial buy amount (the "dev buy") before signing. This determines how many tokens the creator receives at launch, separate from the token creation itself.</p>
+
+    <h4>Multi-Phase Signing</h4>
+    <p>On approval, the page walks through two sequential transactions:</p>
+    <ol>
+      <li><strong>Launch transaction</strong> &mdash; Creates the token on-chain via the Pump.fun program. A mint keypair is pre-generated server-side so both phases reference the same mint address.</li>
+      <li><strong>Fee config transaction</strong> &mdash; Sets up creator fee sharing (wallet splits, basis points). This must come after launch because the fee program requires an initialized mint account.</li>
+    </ol>
+
+    <h4>Security</h4>
+    <p>The signing server binds to <code>127.0.0.1</code> only (not <code>0.0.0.0</code>). Every POST endpoint validates the <code>Origin</code> header against <code>http://localhost:3142</code> and checks a 64-character hex CSRF token generated per session. Sessions expire after 10 minutes.</p>
+  </section>
+
+  <!-- ── Creator Fees ── -->
+  <section class="section" id="creator-fees">
+    <h2 style="margin-top:0">Creator Fees</h2>
+    <p>Pump.fun rewards token creators with a share of trading fees. Fees accrue automatically with every trade &mdash; creators only need to act when they want to claim.</p>
+
+    <h3>Fee Tiers</h3>
+    <table>
+      <thead>
+        <tr><th>Market Cap Range</th><th>Creator Fee Rate</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>&lt; $88,000</td><td>0.05%</td></tr>
+        <tr><td>$88,000 &ndash; $300,000</td><td>0.95%</td></tr>
+        <tr><td>&gt; $300,000</td><td>Scales down</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Pool Types</h3>
+    <p>Fees accumulate in two pool types depending on the token's trading phase:</p>
+    <ul>
+      <li><strong>pump</strong> &mdash; The bonding curve pool (pre-migration).</li>
+      <li><strong>meteora-dbc</strong> &mdash; The Meteora Dynamic Bonding Curve pool (post-migration to Raydium/Meteora).</li>
+    </ul>
+    <p>If your token has graduated, claim from both pools to collect everything.</p>
+
+    <h3>Fee Ownership and Sharing</h3>
+    <p>By default, fees accrue to the deployer wallet. Creators can split fees across up to 10 wallets after launch via the Pump.fun UI. When any single recipient claims, distribution triggers automatically for all assigned wallets. Unclaimed fees never expire.</p>
+
+    <h3>Claiming with MCP Tools</h3>
+    <h4>Claim all fees from the bonding curve pool</h4>
+    <pre><code>Tool: pump_claim_fees
+{
+  "userPublicKey": "YourBase58PublicKey"
+}</code></pre>
+    <p>Omitting <code>mint</code> on the <code>pump</code> pool claims fees across all your tokens in one transaction.</p>
+
+    <h4>Claim from a specific token on Meteora</h4>
+    <pre><code>Tool: pump_claim_fees
+{
+  "userPublicKey": "YourBase58PublicKey",
+  "mint": "TokenMintAddress",
+  "pool": "meteora-dbc"
+}</code></pre>
+
+    <h3>Signing Flow</h3>
+    <ol>
+      <li>The server builds an unsigned transaction via the Pump.fun API.</li>
+      <li>A signing session URL is returned.</li>
+      <li>Open the URL, connect your wallet, and sign the transaction.</li>
+      <li>Fees transfer to your wallet on confirmation.</li>
+    </ol>
+
+    <h3>Ownership Transfer and CTOs</h3>
+    <p>Token ownership can be fully transferred to a different wallet &mdash; the new owner inherits the creator fee stream. Community Takeover administrators can apply to receive creator fees on tokens they did not originally deploy through the Pump.fun UI.</p>
+  </section>
+
+  <!-- ── Agent System ── -->
+  <section class="section" id="agent-system">
+    <h2 style="margin-top:0">Agent System</h2>
+    <p>The agent layer adds autonomous operation capabilities through a dual-model orchestrator that routes tasks to the best model for the job.</p>
+
+    <h3>Dual-Model Orchestrator</h3>
+    <table>
+      <thead>
+        <tr><th>Model</th><th>Provider</th><th>Role</th><th>Env Key</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Hermes 4</strong></td>
+          <td>Nous Research</td>
+          <td>Fast routine operations &mdash; claims, balance checks, monitoring, price quotes, holdings lookups</td>
+          <td><code>NOUS_API_KEY</code></td>
+        </tr>
+        <tr>
+          <td><strong>Claude Sonnet</strong></td>
+          <td>Anthropic</td>
+          <td>Strategic decisions &mdash; analysis, evaluation, recommendations, optimization, scouting, graduation timing</td>
+          <td><code>ANTHROPIC_API_KEY</code></td>
+        </tr>
+      </tbody>
+    </table>
+    <p>The orchestrator uses pattern matching on the task description to route automatically. Routine patterns (claim, balance, check, list, monitor) go to Hermes for speed. Strategic patterns (evaluate, analyze, recommend, optimize, scout) go to Sonnet for depth.</p>
+
+    <h3>Autonomous Strategies</h3>
+    <p>Six built-in strategies can run as background loops:</p>
+
+    <h4>auto-claim</h4>
+    <p>Periodically checks for accrued creator fees and claims them when they exceed a configurable SOL threshold.</p>
+
+    <h4>fee-optimizer</h4>
+    <p>Analyzes fee configurations across tokens and recommends optimal split adjustments based on trading volume.</p>
+
+    <h4>graduation-watch</h4>
+    <p>Monitors bonding curve progress for tokens in your portfolio and alerts when they approach the ~85 SOL graduation threshold.</p>
+
+    <h4>launch-monitor</h4>
+    <p>Watches for new token launches matching keyword filters and surfaces promising opportunities.</p>
+
+    <h4>sniper</h4>
+    <p>Monitors new mints and builds trade transactions for tokens matching keyword criteria with configurable max SOL and slippage bounds.</p>
+
+    <h4>scout</h4>
+    <p>Periodically scans trending topics and generates launch packages ready for one-click deployment.</p>
+  </section>
+
+  <!-- ── Architecture ── -->
+  <section class="section" id="architecture">
+    <h2 style="margin-top:0">Architecture</h2>
+
+    <h3>Directory Layout</h3>
+    <p>The project uses a feature-based directory structure:</p>
+    <pre><code>src/
+  index.ts              Server entry point &mdash; creates McpServer, registers tools
+  server-instructions.ts  Auto-loaded system prompt sent on MCP initialize
+
+  agent/                Dual-model agent orchestrator
+    orchestrator.ts     Routes tasks to Hermes or Sonnet by pattern
+    hermes.ts           Nous Research Hermes 4 client
+    sonnet.ts           Anthropic Claude Sonnet client
+    strategies/         Autonomous background strategies
+      auto-claim.ts     fee-optimizer.ts  graduation-watch.ts
+      launch-monitor.ts scout.ts          sniper.ts
+
+  client/               External API clients
+    pump-rest.ts        Pump.fun frontend API
+    pump-ws.ts          PumpPortal WebSocket (auto-reconnect, ring buffer)
+    dexscreener-rest.ts DexScreener API
+    imagegen.ts         fal.ai Nano Banana 2 Pro image generation
+    ipfs.ts             IPFS metadata upload via Pump.fun
+
+  signing/              Localhost transaction signing server
+    serve.ts            Express server (sign, launch, scout routes)
+    session-store.ts    File-backed session store with mutex
+    launch-builder.ts   Transaction construction for launch + fee config
+    page.html           Signing/launch UI
+    scout-page.html     Scout preview + approval UI
+
+  tools/                MCP tool registrations (one file per tool)
+    _registry.ts        Central registry that wires all tools to the server
+    trading/  tokens/  fees/  analytics/
+    scout/    solana/  state/ stream/  meta/
+
+  transport/            MCP transport layers
+    stdio.ts            Standard I/O (default for Claude Desktop)
+    http.ts             Streamable HTTP with rate limiting
+
+  utils/                Shared constants, formatting, error helpers
+  prompts/              MCP prompt templates
+  resources/            MCP resource registrations</code></pre>
+
+    <h3>Session Store</h3>
+    <p>Signing sessions are persisted to <code>.sessions/sessions.json</code> using a file-backed store with a process-level async mutex to prevent TOCTOU race conditions. Sessions auto-expire after 10 minutes (<code>SESSION_TTL_MS = 600,000</code>). Expired entries are pruned on every read.</p>
+
+    <h3>CSRF Protection</h3>
+    <p>Every session gets a 64-character hex CSRF token (32 random bytes). POST endpoints validate both the <code>Origin</code> header (must be <code>http://localhost:3142</code> or absent for same-origin) and the CSRF token in the request body.</p>
+
+    <h3>Transport Layer</h3>
+    <table>
+      <thead>
+        <tr><th>Transport</th><th>Use Case</th><th>Details</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>stdio</strong></td>
+          <td>Claude Desktop, local CLI</td>
+          <td>Default. Uses <code>StdioServerTransport</code> from the MCP SDK.</td>
+        </tr>
+        <tr>
+          <td><strong>HTTP</strong></td>
+          <td>Remote connections, monitoring</td>
+          <td>Express-based streamable HTTP on port 3000. Includes per-IP rate limiting (1000 req/hr).</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>WebSocket Client</h3>
+    <p>The PumpPortal WebSocket client (<code>client/pump-ws.ts</code>) connects to <code>wss://pumpportal.fun/api/data</code> with exponential backoff reconnect (1s base, 30s max). Events are buffered in a 100-entry ring buffer so recent history is always available even between reconnects.</p>
+  </section>
+
+  <!-- ── API Reference ── -->
+  <section class="section" id="api-reference">
+    <h2 style="margin-top:0">API Reference</h2>
+    <p>The localhost signing server runs on port <code>3142</code> and exposes REST endpoints for three session types. All endpoints bind to <code>127.0.0.1</code> only.</p>
+
+    <h3>Signing Sessions</h3>
+    <p>For pre-built transactions (trades, claims, generic signing).</p>
+    <table>
+      <thead>
+        <tr><th>Method</th><th>Endpoint</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>GET</code></td><td><code>/sign/:sessionId</code></td><td>Serve the signing page HTML.</td></tr>
+        <tr><td><code>GET</code></td><td><code>/api/sign/:sessionId</code></td><td>Fetch session data: transactions, description, meta, RPC URL, CSRF token.</td></tr>
+        <tr><td><code>POST</code></td><td><code>/api/sign/:sessionId/complete</code></td><td>Mark session complete with signature array. Validates origin and CSRF.</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Launch Sessions</h3>
+    <p>Multi-phase token launch: connect wallet, sign launch tx, sign fee config tx.</p>
+    <table>
+      <thead>
+        <tr><th>Method</th><th>Endpoint</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>GET</code></td><td><code>/launch/:sessionId</code></td><td>Serve the launch page HTML.</td></tr>
+        <tr><td><code>GET</code></td><td><code>/api/launch/:sessionId</code></td><td>Fetch session state: phase, description, meta, CSRF token.</td></tr>
+        <tr><td><code>POST</code></td><td><code>/api/launch/:sessionId/connect</code></td><td>Phase 1: Wallet connects. Builds launch tx for the connected wallet.</td></tr>
+        <tr><td><code>POST</code></td><td><code>/api/launch/:sessionId/launch-signed</code></td><td>Phase 2: Launch tx signed. Builds fee config txs using the now-live mint.</td></tr>
+        <tr><td><code>POST</code></td><td><code>/api/launch/:sessionId/complete</code></td><td>Phase 3: Fee config signed. Session marked complete.</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Scout Sessions</h3>
+    <p>AI-generated token with image preview, editing, and multi-phase signing.</p>
+    <table>
+      <thead>
+        <tr><th>Method</th><th>Endpoint</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>GET</code></td><td><code>/scout/:sessionId</code></td><td>Serve the scout page HTML.</td></tr>
+        <tr><td><code>GET</code></td><td><code>/api/scout/:sessionId</code></td><td>Fetch scout session: token details, image URL, phase, CSRF token, mint public key.</td></tr>
+        <tr><td><code>POST</code></td><td><code>/api/scout/:sessionId/update</code></td><td>Edit token name, symbol, or description. Optionally regenerate the image.</td></tr>
+        <tr><td><code>POST</code></td><td><code>/api/scout/:sessionId/regenerate</code></td><td>Regenerate the token image with the current prompt.</td></tr>
+        <tr><td><code>POST</code></td><td><code>/api/scout/:sessionId/approve</code></td><td>Approve: uploads to IPFS, builds launch tx. Accepts wallet and initialBuySol.</td></tr>
+        <tr><td><code>POST</code></td><td><code>/api/scout/:sessionId/launch-signed</code></td><td>Launch tx signed. Builds fee config txs.</td></tr>
+        <tr><td><code>POST</code></td><td><code>/api/scout/:sessionId/complete</code></td><td>Fee config signed. Session marked complete.</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout">
+      <div class="callout-title">Session Expiry</div>
+      <p>All sessions expire after 10 minutes. Expired sessions are pruned automatically on the next API call.</p>
+    </div>
+  </section>
+
+</main>
+
+<script>
+  /* Sidebar active-link tracking on scroll */
+  (function () {
+    var links = document.querySelectorAll('.sidebar a');
+    var sections = [];
+    links.forEach(function (link) {
+      var id = link.getAttribute('href');
+      if (id && id.startsWith('#')) {
+        var el = document.querySelector(id);
+        if (el) sections.push({ el: el, link: link });
+      }
+    });
+
+    function updateActive() {
+      var scrollY = window.scrollY + 80;
+      var active = null;
+      for (var i = sections.length - 1; i >= 0; i--) {
+        if (sections[i].el.offsetTop <= scrollY) {
+          active = sections[i].link;
+          break;
+        }
+      }
+      links.forEach(function (l) { l.classList.remove('active'); });
+      if (active) active.classList.add('active');
+    }
+
+    window.addEventListener('scroll', updateActive, { passive: true });
+    updateActive();
+
+    /* Close mobile sidebar on link click */
+    links.forEach(function (link) {
+      link.addEventListener('click', function () {
+        document.getElementById('sidebar').classList.remove('open');
+      });
+    });
+  })();
+</script>
+
+</body>
+</html>
