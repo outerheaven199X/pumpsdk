@@ -20,7 +20,7 @@ export function requireValidAddress(address: string, label: string): void {
   if (!isValidSolanaAddress(address)) {
     throw new Error(
       `Invalid ${label}: "${address}" is not a valid Base58 Solana address. ` +
-      "Solana addresses are 32-44 characters using Base58 encoding (no 0, O, I, or l).",
+        "Solana addresses are 32-44 characters using Base58 encoding (no 0, O, I, or l).",
     );
   }
 }

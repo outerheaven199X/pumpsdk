@@ -57,13 +57,19 @@ export function registerQuote(server: McpServer) {
 
         if (coin.complete && coin.raydium_pool) {
           return {
-            content: [{
-              type: "text" as const,
-              text: JSON.stringify({
-                error: "Token has graduated to Raydium. Use a DEX aggregator for quotes.",
-                raydiumPool: coin.raydium_pool,
-              }, null, 2),
-            }],
+            content: [
+              {
+                type: "text" as const,
+                text: JSON.stringify(
+                  {
+                    error: "Token has graduated to Raydium. Use a DEX aggregator for quotes.",
+                    raydiumPool: coin.raydium_pool,
+                  },
+                  null,
+                  2,
+                ),
+              },
+            ],
           };
         }
 
@@ -88,20 +94,26 @@ export function registerQuote(server: McpServer) {
         const minOutput = Math.floor(outputAmount * (1 - slippagePct / 100));
 
         return {
-          content: [{
-            type: "text" as const,
-            text: JSON.stringify({
-              quoteType: quote_type,
-              inputMint,
-              outputMint,
-              inputAmount: amount,
-              outputAmount,
-              minimumOutput: minOutput,
-              slippagePct,
-              solAmount: (quote_type === "buy" ? amount : outputAmount) / LAMPORTS_PER_SOL,
-              tokenAmount: (quote_type === "buy" ? outputAmount : amount) / (10 ** TOKEN_DECIMALS),
-            }, null, 2),
-          }],
+          content: [
+            {
+              type: "text" as const,
+              text: JSON.stringify(
+                {
+                  quoteType: quote_type,
+                  inputMint,
+                  outputMint,
+                  inputAmount: amount,
+                  outputAmount,
+                  minimumOutput: minOutput,
+                  slippagePct,
+                  solAmount: (quote_type === "buy" ? amount : outputAmount) / LAMPORTS_PER_SOL,
+                  tokenAmount: (quote_type === "buy" ? outputAmount : amount) / 10 ** TOKEN_DECIMALS,
+                },
+                null,
+                2,
+              ),
+            },
+          ],
         };
       } catch (error) {
         return mcpError(error);

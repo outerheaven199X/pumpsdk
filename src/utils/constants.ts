@@ -11,3 +11,9 @@ export const SESSION_TTL_MS = 600_000;
 export const LAMPORTS_PER_SOL = 1_000_000_000;
 /** Placeholder in claimersArray replaced with the connected wallet at signing time. */
 export const WALLET_PLACEHOLDER = "__CONNECTED_WALLET__";
+/** Only accept POST requests from the local signing page. */
+export const ALLOWED_ORIGIN = `http://localhost:${SIGNING_PORT}`;
+/** DexScreener API base URL for token listing and boost checks. */
+export const DEXSCREENER_API_BASE = "https://api.dexscreener.com";
+/** Byte length for CSRF token generation (produces 64-char hex string). */
+export const CSRF_TOKEN_BYTES = 32;

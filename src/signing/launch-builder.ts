@@ -124,7 +124,8 @@ export async function buildFeeConfigTxs(
 }
 
 /**
- * Build the create-token transaction via PumpPortal, partially signed with a fresh mint keypair.
+ * Build the create-token transaction via PumpPortal, partially signed with a mint keypair.
+ * Uses the provided keypair if given, otherwise generates a fresh one.
  * @param wallet - The creator wallet address.
  * @param metadataUri - IPFS URI for token metadata.
  * @param name - Token name.
@@ -132,6 +133,7 @@ export async function buildFeeConfigTxs(
  * @param initialBuySol - Initial dev buy in SOL.
  * @param slippage - Slippage tolerance percentage.
  * @param priorityFee - Priority fee in SOL.
+ * @param existingMintKeypair - Pre-generated keypair from session (ensures mint matches fee config).
  * @returns The partially-signed transaction and mint address.
  */
 export async function buildLaunchTx(
@@ -142,8 +144,9 @@ export async function buildLaunchTx(
   initialBuySol: number,
   slippage: number,
   priorityFee: number,
+  existingMintKeypair?: Keypair,
 ): Promise<LaunchTxResult> {
-  const mintKeypair = Keypair.generate();
+  const mintKeypair = existingMintKeypair ?? Keypair.generate();
   const mintAddress = mintKeypair.publicKey.toBase58();
 
   const body = {
@@ -188,6 +191,6 @@ async function getRecentBlockhash(): Promise<{ blockhash: string; lastValidBlock
     throw new Error(`RPC getLatestBlockhash failed: HTTP ${res.status}`);
   }
 
-  const json = await res.json() as { result: { value: { blockhash: string; lastValidBlockHeight: number } } };
+  const json = (await res.json()) as { result: { value: { blockhash: string; lastValidBlockHeight: number } } };
   return json.result.value;
 }

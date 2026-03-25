@@ -37,18 +37,22 @@ export function registerNewMints(server: McpServer) {
           includeNsfw: "false",
         });
 
-        const mints = Array.isArray(coins)
-          ? coins.map((c) => c.mint)
-          : [];
+        const mints = Array.isArray(coins) ? coins.map((c) => c.mint) : [];
 
         return {
-          content: [{
-            type: "text" as const,
-            text: JSON.stringify({
-              count: mints.length,
-              mints,
-            }, null, 2),
-          }],
+          content: [
+            {
+              type: "text" as const,
+              text: JSON.stringify(
+                {
+                  count: mints.length,
+                  mints,
+                },
+                null,
+                2,
+              ),
+            },
+          ],
         };
       } catch (error) {
         return mcpError(error);

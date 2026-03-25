@@ -48,29 +48,32 @@ export function registerTrade(server: McpServer) {
         const txBase64 = Buffer.from(txBytes).toString("base64");
 
         const label = trade_type === "buy" ? "Buy" : "Sell";
-        const signingUrl = createSigningSession(
-          [txBase64],
-          `${label} token on Pump.fun`,
-          {
-            action: label,
-            mint: mint.slice(0, 8) + "...",
-            amount: String(amount),
-            slippage: slippage + "%",
-          },
-        );
+        const signingUrl = await createSigningSession([txBase64], `${label} token on Pump.fun`, {
+          action: label,
+          mint: mint.slice(0, 8) + "...",
+          amount: String(amount),
+          slippage: slippage + "%",
+        });
 
         return {
-          content: [{
-            type: "text" as const,
-            text: JSON.stringify({
-              signingUrl,
-              tradeType: trade_type,
-              mint,
-              amount,
-              slippage,
-              instructions: "Open the signing URL in your browser. Connect your wallet and sign to execute the trade.",
-            }, null, 2),
-          }],
+          content: [
+            {
+              type: "text" as const,
+              text: JSON.stringify(
+                {
+                  signingUrl,
+                  tradeType: trade_type,
+                  mint,
+                  amount,
+                  slippage,
+                  instructions:
+                    "Open the signing URL in your browser. Connect your wallet and sign to execute the trade.",
+                },
+                null,
+                2,
+              ),
+            },
+          ],
         };
       } catch (error) {
         return mcpError(error);

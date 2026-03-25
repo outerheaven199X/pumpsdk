@@ -1,12 +1,16 @@
 {
   "name": "pumpfun-mcp",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "MCP server for Pump.fun token trading and management",
   "type": "module",
   "main": "dist/src/index.js",
   "scripts": {
-    "build": "tsc && node -e \"const{cpSync,mkdirSync}=require('fs');mkdirSync('dist/src/signing',{recursive:true});cpSync('src/signing/page.html','dist/src/signing/page.html')\"",
-    "start": "node dist/src/index.js"
+    "build": "tsc && node -e \"const{cpSync,mkdirSync}=require('fs');mkdirSync('dist/src/signing',{recursive:true});cpSync('src/signing/page.html','dist/src/signing/page.html');cpSync('src/signing/scout-page.html','dist/src/signing/scout-page.html')\"",
+    "start": "node dist/src/index.js",
+    "lint": "eslint src/",
+    "lint:fix": "eslint src/ --fix",
+    "format": "prettier --write src/",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.1",
@@ -18,6 +22,11 @@
   "devDependencies": {
     "@types/express": "^5.0.2",
     "@types/node": "^22.15.17",
+    "@typescript-eslint/eslint-plugin": "^8.57.2",
+    "@typescript-eslint/parser": "^8.57.2",
+    "eslint": "^10.1.0",
+    "eslint-config-prettier": "^10.1.8",
+    "prettier": "^3.8.1",
     "typescript": "^5.8.3"
   }
 }

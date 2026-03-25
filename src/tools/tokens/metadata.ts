@@ -27,10 +27,12 @@ export function registerMetadata(server: McpServer) {
         const result = await pumpGet<Record<string, unknown>>(`/coins/${mint}`);
 
         return {
-          content: [{
-            type: "text" as const,
-            text: JSON.stringify(result, null, 2),
-          }],
+          content: [
+            {
+              type: "text" as const,
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
         };
       } catch (error) {
         return mcpError(error);

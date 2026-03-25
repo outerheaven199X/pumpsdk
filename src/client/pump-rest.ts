@@ -8,10 +8,7 @@ import { PUMP_FRONTEND_API, PUMPPORTAL_API_BASE } from "../utils/constants.js";
  * @param params - Optional query parameters.
  * @returns Parsed JSON response.
  */
-export async function pumpGet<T>(
-  path: string,
-  params?: Record<string, string>,
-): Promise<T> {
+export async function pumpGet<T>(path: string, params?: Record<string, string>): Promise<T> {
   const url = new URL(`${PUMP_FRONTEND_API}${path}`);
   if (params) {
     for (const [k, v] of Object.entries(params)) {
@@ -37,10 +34,7 @@ export async function pumpGet<T>(
  * @param body - JSON-serializable request body.
  * @returns Parsed JSON response.
  */
-export async function portalPost<T>(
-  path: string,
-  body: unknown,
-): Promise<T> {
+export async function portalPost<T>(path: string, body: unknown): Promise<T> {
   const res = await fetch(`${PUMPPORTAL_API_BASE}${path}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -62,10 +56,7 @@ export async function portalPost<T>(
  * @param body - JSON-serializable request body.
  * @returns Raw transaction bytes as Uint8Array.
  */
-export async function portalPostBinary(
-  path: string,
-  body: unknown,
-): Promise<Uint8Array> {
+export async function portalPostBinary(path: string, body: unknown): Promise<Uint8Array> {
   const res = await fetch(`${PUMPPORTAL_API_BASE}${path}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },

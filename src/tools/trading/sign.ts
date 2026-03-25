@@ -27,20 +27,22 @@ export function registerOpenSigningPage(server: McpServer) {
           throw new Error("No transactions provided");
         }
 
-        const signingUrl = createSigningSession(
-          transactions,
-          description,
-          meta ?? {},
-        );
+        const signingUrl = await createSigningSession(transactions, description, meta ?? {});
 
         return {
-          content: [{
-            type: "text" as const,
-            text: JSON.stringify({
-              signingUrl,
-              message: `Signing page ready. Direct the user to: ${signingUrl}`,
-            }, null, 2),
-          }],
+          content: [
+            {
+              type: "text" as const,
+              text: JSON.stringify(
+                {
+                  signingUrl,
+                  message: `Signing page ready. Direct the user to: ${signingUrl}`,
+                },
+                null,
+                2,
+              ),
+            },
+          ],
         };
       } catch (error) {
         return mcpError(error);

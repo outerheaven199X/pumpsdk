@@ -10,7 +10,9 @@ const inputSchema = {
   metadataUri: z.string().describe("IPFS metadata URI for the token"),
   tokenName: z.string().describe("Token name"),
   tokenSymbol: z.string().describe("Token ticker symbol"),
-  claimersArray: z.array(z.string()).describe("Wallet addresses for fee claimers (use '__CONNECTED_WALLET__' for the deployer)"),
+  claimersArray: z
+    .array(z.string())
+    .describe("Wallet addresses for fee claimers (use '__CONNECTED_WALLET__' for the deployer)"),
   basisPointsArray: z.array(z.number()).describe("BPS allocations per claimer (must sum to 10000)"),
   initialBuySol: z.number().optional().describe("Initial dev buy in SOL (default: 0)"),
   slippage: z.number().optional().describe("Slippage tolerance percentage (default: 10)"),
@@ -26,13 +28,22 @@ export function registerOpenLaunchPage(server: McpServer) {
     "pump_open_launch_page",
     "Open a multi-phase launch page for a token with pre-prepared metadata. The user connects their wallet, signs fee config, then signs the launch transaction.",
     inputSchema,
-    async ({ metadataUri, tokenName, tokenSymbol, claimersArray, basisPointsArray, initialBuySol, slippage, priorityFee }) => {
+    async ({
+      metadataUri,
+      tokenName,
+      tokenSymbol,
+      claimersArray,
+      basisPointsArray,
+      initialBuySol,
+      slippage,
+      priorityFee,
+    }) => {
       try {
         if (claimersArray.length !== basisPointsArray.length) {
           throw new Error("claimersArray and basisPointsArray must have the same length");
         }
 
-        const launchUrl = createLaunchSession({
+        const launchUrl = await createLaunchSession({
           metadataUri,
           tokenName,
           tokenSymbol,
@@ -50,15 +61,22 @@ export function registerOpenLaunchPage(server: McpServer) {
         });
 
         return {
-          content: [{
-            type: "text" as const,
-            text: JSON.stringify({
-              launchUrl,
-              tokenName,
-              tokenSymbol,
-              instructions: "Open the launch URL in your browser. Connect your wallet, sign the fee config, then sign the launch transaction.",
-            }, null, 2),
-          }],
+          content: [
+            {
+              type: "text" as const,
+              text: JSON.stringify(
+                {
+                  launchUrl,
+                  tokenName,
+                  tokenSymbol,
+                  instructions:
+                    "Open the launch URL in your browser. Connect your wallet, sign the fee config, then sign the launch transaction.",
+                },
+                null,
+                2,
+              ),
+            },
+          ],
         };
       } catch (error) {
         return mcpError(error);

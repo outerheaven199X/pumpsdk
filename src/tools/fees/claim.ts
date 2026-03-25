@@ -10,7 +10,10 @@ import { createSigningSession } from "../../signing/serve.js";
 
 const inputSchema = {
   mint: z.string().optional().describe("Token mint address (optional for pump pool — claims all fees at once)"),
-  pool: z.enum(["pump", "meteora-dbc"]).optional().describe("Pool type: 'pump' (bonding curve) or 'meteora-dbc' (Meteora). Default: pump"),
+  pool: z
+    .enum(["pump", "meteora-dbc"])
+    .optional()
+    .describe("Pool type: 'pump' (bonding curve) or 'meteora-dbc' (Meteora). Default: pump"),
   userPublicKey: z.string().describe("Creator's Base58 wallet public key"),
   priorityFee: z.number().optional().describe("Priority fee in SOL (default: 0.000001)"),
 };
@@ -44,27 +47,30 @@ export function registerClaimFees(server: McpServer) {
         const txBytes = await portalPostBinary("/trade-local", body);
         const txBase64 = Buffer.from(txBytes).toString("base64");
 
-        const signingUrl = createSigningSession(
-          [txBase64],
-          "Claim creator fees from Pump.fun",
-          {
-            action: "Claim Fees",
-            pool: pool ?? "pump",
-            mint: mint ?? "all tokens",
-          },
-        );
+        const signingUrl = await createSigningSession([txBase64], "Claim creator fees from Pump.fun", {
+          action: "Claim Fees",
+          pool: pool ?? "pump",
+          mint: mint ?? "all tokens",
+        });
 
         return {
-          content: [{
-            type: "text" as const,
-            text: JSON.stringify({
-              signingUrl,
-              action: "collectCreatorFee",
-              pool: pool ?? "pump",
-              mint: mint ?? "all",
-              instructions: "Open the signing URL in your browser. Connect your wallet and sign to claim your creator fees.",
-            }, null, 2),
-          }],
+          content: [
+            {
+              type: "text" as const,
+              text: JSON.stringify(
+                {
+                  signingUrl,
+                  action: "collectCreatorFee",
+                  pool: pool ?? "pump",
+                  mint: mint ?? "all",
+                  instructions:
+                    "Open the signing URL in your browser. Connect your wallet and sign to claim your creator fees.",
+                },
+                null,
+                2,
+              ),
+            },
+          ],
         };
       } catch (error) {
         return mcpError(error);
