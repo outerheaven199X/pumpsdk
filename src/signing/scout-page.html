@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; connect-src 'self' https://api.mainnet-beta.solana.com https://api.devnet.solana.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' https://*.fal.media data:;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; connect-src 'self' https://api.mainnet-beta.solana.com https://api.devnet.solana.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' https://*.fal.media data:;">
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Scout Launch — Pump.fun MCP</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -457,7 +457,7 @@
       <div id="status-area"></div>
     </div>
 
-    <script src="/static/solana-web3.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@solana/web3.js@1.98.0/lib/index.iife.min.js"></script>
     <script>
       var solanaWeb3 = window.solanaWeb3;
       var Connection = solanaWeb3.Connection;
@@ -726,8 +726,16 @@
         showStatusHtml('<span class="spinner"></span> Connecting wallet...', "info");
 
         try {
-          var resp = await provider.connect();
-          var pubkey = (resp.publicKey || provider.publicKey).toString();
+          var resp;
+          try {
+            resp = await provider.connect();
+          } catch (connectErr) {
+            console.error("connect() error:", connectErr);
+            throw new Error("Wallet connect failed: " + (connectErr.message || connectErr));
+          }
+          var rawKey = resp.publicKey || provider.publicKey;
+          var pubkey = typeof rawKey === "string" ? rawKey : (rawKey.toBase58 ? rawKey.toBase58() : rawKey.toString());
+          console.log("Connected wallet:", pubkey);
           connectedWallet = { name: name, provider: provider, pubkey: pubkey };
 
           clearStatus();
@@ -763,6 +771,23 @@
         }
       }
 
+      /* ===== Partial-signature helpers (Phantom rejects pre-signed txs) ===== */
+
+      function isNonEmptySig(sig) {
+        for (var j = 0; j < sig.length; j++) { if (sig[j] !== 0) return true; }
+        return false;
+      }
+
+      function findPartialSignatures(vtx) {
+        var preSigned = [];
+        for (var j = 0; j < vtx.signatures.length; j++) {
+          if (vtx.signatures[j].length === 64 && isNonEmptySig(vtx.signatures[j])) {
+            preSigned.push({ index: j, sig: new Uint8Array(vtx.signatures[j]) });
+          }
+        }
+        return preSigned;
+      }
+
       /* ===== Transaction signing ===== */
 
       async function signAndAdvance(phase) {
@@ -780,19 +805,23 @@
           fill.style.width = (i / currentTransactions.length) * 100 + "%";
           try {
             var txBytes = decodeTx(currentTransactions[i]);
-            var signedTx;
-            try {
-              var vtx = VersionedTransaction.deserialize(txBytes);
-              signedTx = await connectedWallet.provider.signTransaction(vtx);
-            } catch (_e) {
-              var tx = Transaction.from(txBytes);
-              tx.feePayer = connectedWallet.provider.publicKey;
-              var bh = await connection.getLatestBlockhash();
-              tx.recentBlockhash = bh.blockhash;
-              signedTx = await connectedWallet.provider.signTransaction(tx);
+            var vtx = VersionedTransaction.deserialize(txBytes);
+
+            var preSigned = findPartialSignatures(vtx);
+            if (preSigned.length > 0) {
+              for (var p = 0; p < preSigned.length; p++) {
+                vtx.signatures[preSigned[p].index] = new Uint8Array(64);
+              }
             }
 
-            var sig = await connection.sendRawTransaction(signedTx.serialize());
+            var signedTx = await connectedWallet.provider.signTransaction(vtx);
+
+            for (var r = 0; r < preSigned.length; r++) {
+              signedTx.signatures[preSigned[r].index] = preSigned[r].sig;
+            }
+
+            var rawBytes = signedTx.serialize();
+            var sig = await connection.sendRawTransaction(rawBytes, { skipPreflight: true });
             await connection.confirmTransaction(sig, "confirmed");
             signatures.push(sig);
 

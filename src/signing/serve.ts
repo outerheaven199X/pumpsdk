@@ -2,7 +2,7 @@
 
 import express from "express";
 import { randomUUID, randomBytes } from "node:crypto";
-import { readFileSync } from "node:fs";
+import { readFileSync, appendFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Keypair } from "@solana/web3.js";
@@ -246,12 +246,12 @@ function registerLaunchRoutes(app: express.Express, pageHtml: string): void {
     }
 
     try {
-      const secretKey = keypairStore.get(req.params.sessionId);
-      if (!secretKey) {
-        res.status(410).json({ error: "Session keypair expired." });
+      const secretBytes = Buffer.from(session.mintKeypairSecret, "base64");
+      if (secretBytes.length !== 64) {
+        res.status(410).json({ error: `Invalid keypair: expected 64 bytes, got ${secretBytes.length}` });
         return;
       }
-      const mintKeypair = Keypair.fromSecretKey(new Uint8Array(secretKey));
+      const mintKeypair = Keypair.fromSecretKey(new Uint8Array(secretBytes));
 
       const result = await buildLaunchTx(
         wallet,
@@ -363,6 +363,14 @@ export function startSigningServer(): void {
   app.use("/static", express.static(resolve(dirname(fileURLToPath(import.meta.url)), ".")));
   registerRoutes(app, pages);
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+    const debugLog = `[express-error] ${new Date().toISOString()}\n${err.message}\n${err.stack}\n---\n`;
+    try { appendFileSync("C:/Users/npitt/Desktop/pumpfun/approve-debug.log", debugLog); } catch (_) { /* */ }
+    process.stderr.write(debugLog);
+    if (!res.headersSent) res.status(500).json({ error: err.message });
+  });
+
   app.listen(SIGNING_PORT, "127.0.0.1", () => {
     console.error(`[pumpsdk] Signing server at http://localhost:${SIGNING_PORT}`);
   });
@@ -451,7 +459,7 @@ export async function createLaunchSession(params: LaunchSessionParams): Promise<
     phase: "connect",
     wallet: null,
     mintPublicKey,
-    mintKeypairSecret: "IN_MEMORY",
+    mintKeypairSecret: Buffer.from(mintKeypair.secretKey).toString("base64"),
     feeConfigTxs: [],
     launchTx: null,
     signatures: [],
@@ -569,6 +577,7 @@ function registerScoutRoutes(app: express.Express, scoutPageHtml: string): void 
   });
 
   app.post("/api/scout/:sessionId/approve", async (req, res) => {
+    console.log("[approve] HIT — session:", req.params.sessionId, "body keys:", Object.keys(req.body));
     if (!isValidOrigin(req)) {
       res.status(403).json({ error: "Invalid origin." });
       return;
@@ -597,24 +606,33 @@ function registerScoutRoutes(app: express.Express, scoutPageHtml: string): void 
         imageUrl: session.imageUrl || "",
       });
 
-      const secretKey = keypairStore.get(req.params.sessionId);
-      if (!secretKey) {
-        res.status(410).json({ error: "Session keypair expired." });
+      const secretBytes = Buffer.from(session.mintKeypairSecret, "base64");
+      if (secretBytes.length !== 64) {
+        res.status(410).json({ error: `Invalid keypair: expected 64 bytes, got ${secretBytes.length}` });
         return;
       }
-      const mintKeypair = Keypair.fromSecretKey(new Uint8Array(secretKey));
+      const mintKeypair = Keypair.fromSecretKey(new Uint8Array(secretBytes));
+      console.error(`[approve-debug] mintKeypair pubkey=${mintKeypair.publicKey.toBase58()} from session JSON (${secretBytes.length} bytes)`);
       const buySol = typeof initialBuySol === "number" ? initialBuySol : 0;
 
-      const result = await buildLaunchTx(
-        wallet,
-        metadataUri,
-        session.tokenName,
-        session.tokenSymbol,
-        buySol,
-        session.slippage,
-        session.priorityFee,
-        mintKeypair,
-      );
+      let result;
+      try {
+        result = await buildLaunchTx(
+          wallet,
+          metadataUri,
+          session.tokenName,
+          session.tokenSymbol,
+          buySol,
+          session.slippage,
+          session.priorityFee,
+          mintKeypair,
+        );
+      } catch (buildErr: unknown) {
+        const msg = buildErr instanceof Error ? buildErr.message : String(buildErr);
+        const stack = buildErr instanceof Error ? buildErr.stack : "";
+        console.error(`[approve-debug] buildLaunchTx FAILED: ${msg}\n${stack}`);
+        throw buildErr;
+      }
 
       session.wallet = wallet;
       session.metadataUri = metadataUri;
@@ -629,6 +647,10 @@ function registerScoutRoutes(app: express.Express, scoutPageHtml: string): void 
       });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
+      const stack = err instanceof Error ? err.stack : "";
+      const debugLog = `[approve] ${new Date().toISOString()}\nError: ${msg}\nStack: ${stack}\n---\n`;
+      try { appendFileSync("C:/Users/npitt/Desktop/pumpfun/approve-debug.log", debugLog); } catch (_) { /* ignore */ }
+      process.stderr.write(debugLog);
       res.status(500).json({ error: msg });
     }
   });
@@ -764,7 +786,7 @@ export async function createScoutSession(params: ScoutSessionParams = {}): Promi
     phase: "preview",
     wallet: null,
     mintPublicKey,
-    mintKeypairSecret: "IN_MEMORY",
+    mintKeypairSecret: Buffer.from(mintKeypair.secretKey).toString("base64"),
     metadataUri: null,
     initialBuySol: 0,
     signatures: [],

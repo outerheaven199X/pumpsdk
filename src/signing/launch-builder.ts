@@ -159,8 +159,10 @@ export async function buildLaunchTx(
     slippage,
     priorityFee,
     pool: "pump",
+    isMayhemMode: "false",
   };
 
+  console.error("[buildLaunchTx] POST /trade-local body:", JSON.stringify(body));
   const txBytes = await portalPostBinary("/trade-local", body);
   const tx = VersionedTransaction.deserialize(txBytes);
   tx.sign([mintKeypair]);

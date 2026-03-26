@@ -65,6 +65,7 @@ export async function portalPostBinary(path: string, body: unknown): Promise<Uin
 
   if (!res.ok) {
     const text = await res.text().catch(() => res.statusText);
+    console.error(`[portalPostBinary] ${res.status} response body: ${text}`);
     throw new Error(`PumpPortal API error: HTTP ${res.status}: ${text}`);
   }
 
