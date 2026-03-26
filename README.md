@@ -1,14 +1,6 @@
 # PumpSDK
 
-<!-- 
-  npm description (< 120 chars):
-  MCP server for Pump.fun. Launch tokens, trade, stream the market, and generate art from Claude. Zero-custody signing.
-
-  GitHub description (< 350 chars):
-  MCP server that gives Claude 30+ tools for Pump.fun on Solana. Launch tokens from conversation, 
-  trade on existing ones, stream market data over WebSocket, generate token art, run autonomous 
-  trading strategies. All transactions sign in your browser wallet. Your keys never touch the server.
--->
+> **Status: WIP (90%)** — Core launch pipeline works end-to-end. Signing, image gen, and PumpPortal integration are functional. Dev buy with low-balance wallets, slider UX, and some edge cases are being ironed out. Should be solid by morning.
 
 ```bash
 npx -y pumpsdk
@@ -71,7 +63,7 @@ Add this to your Claude Desktop config (`~/.config/claude/claude_desktop_config.
       "command": "npx",
       "args": ["-y", "pumpsdk"],
       "env": {
-        "SOLANA_RPC_URL": "https://api.mainnet-beta.solana.com",
+        "SOLANA_RPC_URL": "https://mainnet.helius-rpc.com/?api-key=YOUR_HELIUS_KEY",
         "FAL_API_KEY": "your-fal-key-here"
       }
     }
@@ -93,7 +85,7 @@ Claude takes it from there.
 
 | Variable | Required | What it does |
 |---|---|---|
-| `SOLANA_RPC_URL` | Yes | Your Solana RPC endpoint. Helius, Quicknode, or the public mainnet URL all work. |
+| `SOLANA_RPC_URL` | Yes | Your Solana RPC endpoint. **Use Helius (free tier) or QuickNode.** The public mainnet RPC blocks `sendTransaction`. |
 | `FAL_API_KEY` | No | Enables AI image generation for token art. Get one at fal.ai. |
 | `HERMES_API_KEY` | No | Enables dual-model agent mode (routes between Hermes and Sonnet). |
 | `PUMP_PORTAL_API_KEY` | No | Required for PumpPortal's transaction building API. |
@@ -111,7 +103,7 @@ All flags are environment variables. Set them in your shell, `.env` file, or Cla
 | `PUMPSDK_NO_WS=1` | off | Skips the PumpPortal WebSocket connection. Saves bandwidth if you only need MCP tools. |
 | `PUMPSDK_NO_IMAGE_GEN=1` | off | Disables image generation even if `FAL_API_KEY` is set. |
 | `PUMPSDK_DEBUG_API=1` | off | Logs all outbound API requests and responses. Verbose. |
-| `PUMPSDK_SESSION_TTL` | `600000` | Session timeout in milliseconds. Default is 10 minutes. Bump to `1200000` (20 min) if you're recording demos. |
+| `PUMPSDK_SESSION_TTL` | `3600000` | Session timeout in milliseconds. Default is 1 hour. |
 | `PUMPSDK_DEV_NO_CSRF=1` | off | Disables CSRF validation on the signing server. Development only. Never in production. |
 | `PUMPSDK_ENCRYPT_SESSIONS=1` | off | Encrypts session data at rest. |
 
@@ -179,25 +171,41 @@ src/
 ## Troubleshooting
 
 **"Connection refused on port 3142"**
-The signing server didn't start. Check that nothing else is using port 3142 (`lsof -i :3142`). PumpSDK starts it automatically, but if you're running in a weird environment (Docker, WSL without networking), the localhost binding might not resolve. Try setting `HOST=0.0.0.0` if you know what you're doing.
+The signing server didn't start. Check that nothing else is using port 3142 (`netstat -ano | findstr :3142` on Windows, `lsof -i :3142` on Mac/Linux). Kill zombie node processes: `taskkill /F /IM node.exe` (Windows) or `pkill -f node` (Mac/Linux). PumpSDK starts it automatically, but stale processes from prior runs can hold the port.
 
-**"Session expired" when trying to sign**
-Default TTL is 10 minutes. If you're slow or multitasking, bump it: `PUMPSDK_SESSION_TTL=1200000`.
+**"Session expired" / 410 when trying to sign**
+Default TTL is 1 hour. If you're getting 410s immediately, the issue is likely a stale server process running old code. Kill all node processes, rebuild, and restart. The session keypair is stored in `.sessions/sessions.json` and survives restarts.
+
+**PumpPortal returns 400: Bad Request**
+PumpPortal validates your wallet balance before building the transaction. If your dev buy amount + rent (~0.02 SOL) + priority fee exceeds your wallet balance, you get a silent 400. Fix: lower the dev buy, or set it to 0 and buy separately after launch. Also: do NOT include `isMayhemMode` in the payload — PumpPortal rejects unknown fields.
+
+**Transaction built but Phantom signing fails / "Blockhash not found"**
+The public Solana RPC (`api.mainnet-beta.solana.com`) rate-limits and blocks `sendTransaction`. Use a real RPC provider. Helius has a free tier: set `SOLANA_RPC_URL=https://mainnet.helius-rpc.com/?api-key=YOUR_KEY` in your `.env`.
+
+**CSP blocks RPC requests in the browser**
+If you use a custom RPC (Helius, QuickNode, etc.), its domain must be in the Content-Security-Policy `connect-src` directive in both `page.html` and `scout-page.html`. By default, `*.helius-rpc.com` is whitelisted. Add your provider's domain if you use a different one.
 
 **Wallet not detected on signing page**
-The page looks for Phantom, Solflare, and Backpack in that order. Make sure your wallet extension is installed, unlocked, and set to the right network (mainnet or devnet depending on your config).
+The page checks for Phantom, Solflare, Backpack, Coinbase, Trust, Brave, Exodus, Slope, Torus, and MathWallet. Make sure your wallet extension is installed, unlocked, and set to mainnet.
 
-**Image generation fails**
-Check your `FAL_API_KEY`. If you don't want to use it, set `PUMPSDK_NO_IMAGE_GEN=1` and provide your own image file.
+**Image generation fails or times out**
+PumpSDK uses fal.ai Nano Banana 2 Pro for token logos. Check your `FAL_API_KEY`. The sync endpoint at `fal.run` is used (no polling). If fal.ai is down, launch proceeds without a logo.
 
 **WebSocket disconnects**
-PumpPortal's WebSocket can drop under load. PumpSDK reconnects automatically. If you're seeing repeated disconnects, the service might be down. Set `PUMPSDK_NO_WS=1` to disable it and use polling tools instead.
+PumpPortal's WebSocket can drop under load. PumpSDK reconnects automatically. Set `PUMPSDK_NO_WS=1` to disable it and use polling tools instead.
 
 **Agent strategy bought something I didn't want**
-It shouldn't. Every transaction requires your wallet signature in the browser. If you're worried, run with `PUMPSDK_AGENT_DRY_RUN=1` first to see what the agent would do without building real transactions.
+It shouldn't — every transaction requires your wallet signature. Run with `PUMPSDK_AGENT_DRY_RUN=1` first to see what the agent would do without building real transactions.
 
 **Claude says the tools aren't available**
-Make sure the MCP server config in Claude Desktop points at the right command. Run `npx -y pumpsdk` in a terminal first to confirm it starts without errors. Check that your Node version is 20+.
+Make sure the MCP server config points at the right command. Run `npx -y pumpsdk` in a terminal first to confirm it starts. Node 20+ required.
+
+### Best practices
+
+- **Use a real RPC.** Helius free tier is fine. The public mainnet RPC will reject your transactions.
+- **Kill stale servers.** If you're iterating, always kill old node processes before restarting. Zombie servers serve stale code.
+- **Start with 0 dev buy** to prove the pipeline works, then add a dev buy once you've confirmed your wallet has enough SOL.
+- **Keep `.env` out of git.** It's in `.gitignore` by default. Never commit RPC keys or API keys.
 
 ---
 

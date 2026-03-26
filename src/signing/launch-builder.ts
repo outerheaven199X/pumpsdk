@@ -159,7 +159,6 @@ export async function buildLaunchTx(
     slippage,
     priorityFee,
     pool: "pump",
-    isMayhemMode: "false",
   };
 
   console.error("[buildLaunchTx] POST /trade-local body:", JSON.stringify(body));
