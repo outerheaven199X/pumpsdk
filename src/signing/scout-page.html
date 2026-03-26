@@ -2,383 +2,91 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; connect-src 'self' https://api.mainnet-beta.solana.com https://api.devnet.solana.com https://*.helius-rpc.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' https://*.fal.media data:;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; connect-src 'self' https://api.mainnet-beta.solana.com https://api.devnet.solana.com https://*.helius-rpc.com wss://*.helius-rpc.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' https://*.fal.media data:;">
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Scout Launch — Pump.fun MCP</title>
+    <title>PumpSDK — Token Launch</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <style>
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-      }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
       :root {
-        --bg: #0d0d0f;
-        --bg-card: #1a1a1e;
-        --text: #f5f5ee;
-        --text-muted: rgba(245, 245, 238, 0.5);
-        --text-light: rgba(245, 245, 238, 0.3);
-        --accent: #00e87b;
-        --accent-hover: #00cc6a;
-        --accent-text: #0d0d0f;
-        --border: rgba(245, 245, 238, 0.08);
-        --error-bg: rgba(214, 43, 43, 0.12);
-        --error-text: #f87171;
-        --success-bg: rgba(0, 232, 123, 0.1);
-        --success-text: #00e87b;
-        --radius: 16px;
-        --radius-sm: 10px;
+        --bg: #0d0d0f; --bg-card: #1a1a1e; --text: #f5f5ee;
+        --text-muted: rgba(245,245,238,0.5); --text-light: rgba(245,245,238,0.3);
+        --accent: #00e87b; --accent-hover: #00cc6a; --accent-text: #0d0d0f;
+        --border: rgba(245,245,238,0.08);
+        --error-bg: rgba(214,43,43,0.12); --error-text: #f87171;
+        --success-bg: rgba(0,232,123,0.1); --success-text: #00e87b;
+        --radius: 16px; --radius-sm: 10px;
       }
       body {
-        font-family:
-          "Nunito",
-          -apple-system,
-          sans-serif;
+        font-family: "Nunito", -apple-system, sans-serif;
         background: var(--bg);
-        background-image: radial-gradient(rgba(245, 245, 238, 0.06) 1px, transparent 1px);
+        background-image: radial-gradient(rgba(245,245,238,0.06) 1px, transparent 1px);
         background-size: 20px 20px;
-        color: var(--text);
-        min-height: 100vh;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        color: var(--text); min-height: 100vh;
+        display: flex; align-items: center; justify-content: center;
       }
       body::before {
-        content: "";
-        position: fixed;
-        inset: 0;
-        background: radial-gradient(ellipse at 50% 0%, rgba(0, 232, 123, 0.06) 0%, transparent 60%);
+        content: ""; position: fixed; inset: 0;
+        background: radial-gradient(ellipse at 50% 0%, rgba(0,232,123,0.06) 0%, transparent 60%);
         pointer-events: none;
       }
-      .container {
-        max-width: 520px;
-        width: 100%;
-        padding: 1.5rem;
-      }
-      .logo {
-        text-align: center;
-        margin-bottom: 1.25rem;
-      }
-      .logo h1 {
-        font-size: 2.2rem;
-        font-weight: 700;
-      }
-      .logo .pump {
-        color: var(--accent);
-      }
-      .logo .sub {
-        display: block;
-        font-size: 0.8rem;
-        font-weight: 500;
-        color: var(--text-light);
-        letter-spacing: 0.12em;
-        text-transform: uppercase;
-        margin-top: 0.3rem;
-      }
-      .phase-dots {
-        display: flex;
-        justify-content: center;
-        gap: 0.5rem;
-        margin-bottom: 1rem;
-      }
-      .phase-dot {
-        width: 10px;
-        height: 10px;
-        border-radius: 50%;
-        background: var(--border);
-        transition: background 0.3s;
-      }
-      .phase-dot.active {
-        background: var(--accent);
-      }
-      .phase-dot.done {
-        background: var(--accent);
-        opacity: 0.5;
-      }
-      .phase-line {
-        width: 24px;
-        height: 2px;
-        background: var(--border);
-        align-self: center;
-      }
-      .phase-line.done {
-        background: var(--accent);
-        opacity: 0.5;
-      }
-      .phase-label {
-        font-size: 0.75rem;
-        color: var(--text-light);
-        text-align: center;
-        margin-bottom: 1rem;
-        text-transform: uppercase;
-        letter-spacing: 0.1em;
-      }
-      .card {
-        background: var(--bg-card);
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-        padding: 1.25rem;
-        margin-bottom: 0.75rem;
-      }
-      .card h2 {
-        font-size: 0.85rem;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        color: var(--text-muted);
-        margin-bottom: 0.75rem;
-        font-weight: 600;
-      }
-      .token-name {
-        font-size: 1.4rem;
-        font-weight: 700;
-        margin-bottom: 0.15rem;
-      }
-      .token-symbol {
-        font-size: 0.95rem;
-        color: var(--accent);
-        font-weight: 600;
-        margin-bottom: 0.5rem;
-      }
-      .token-desc {
-        font-size: 0.82rem;
-        color: var(--text-muted);
-        line-height: 1.4;
-        margin-bottom: 0.75rem;
-      }
-      .meta-row {
-        display: flex;
-        justify-content: space-between;
-        padding: 0.35rem 0;
-        border-bottom: 1px solid var(--border);
-      }
-      .meta-label {
-        color: var(--text-muted);
-        font-size: 0.82rem;
-      }
-      .meta-value {
-        font-weight: 600;
-        font-size: 0.82rem;
-      }
-
-      /* Image */
-      .image-wrap {
-        text-align: center;
-        margin-bottom: 0.75rem;
-        position: relative;
-      }
-      .image-wrap img {
-        max-width: 200px;
-        max-height: 200px;
-        border-radius: var(--radius-sm);
-        border: 2px solid var(--border);
-      }
-      .image-placeholder {
-        width: 200px;
-        height: 200px;
-        margin: 0 auto;
-        border-radius: var(--radius-sm);
-        border: 2px dashed var(--border);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: var(--text-light);
-        font-size: 0.85rem;
-        text-align: center;
-        padding: 1rem;
-      }
-      .image-overlay {
-        position: absolute;
-        inset: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: rgba(13, 13, 15, 0.85);
-        border-radius: var(--radius-sm);
-        color: var(--text-light);
-        font-size: 0.85rem;
-      }
-
-      /* SOL slider */
-      .sol-picker {
-        margin: 0.5rem 0;
-      }
-      .sol-presets {
-        display: flex;
-        gap: 0.5rem;
-        margin-bottom: 0.75rem;
-      }
-      .sol-preset {
-        flex: 1;
-        padding: 0.5rem;
-        border: 1px solid var(--border);
-        border-radius: var(--radius-sm);
-        background: var(--bg);
-        color: var(--text);
-        font-size: 0.85rem;
-        font-weight: 600;
-        cursor: pointer;
-        text-align: center;
-        transition: all 0.15s;
-      }
-      .sol-preset:hover {
-        border-color: var(--accent);
-      }
-      .sol-preset.active {
-        background: var(--accent);
-        color: var(--accent-text);
-        border-color: var(--accent);
-      }
-      .sol-slider {
-        width: 100%;
-        margin: 0.5rem 0;
-        accent-color: var(--accent);
-      }
-      .sol-display {
-        text-align: center;
-        font-size: 1.1rem;
-        font-weight: 700;
-        color: var(--accent);
-      }
-
-      /* Buttons */
-      .btn {
-        width: 100%;
-        padding: 0.9rem;
-        border: none;
-        border-radius: var(--radius-sm);
-        font-size: 1rem;
-        font-weight: 700;
-        cursor: pointer;
-        transition: all 0.15s;
-        font-family: inherit;
-      }
-      .btn-primary {
-        background: var(--accent);
-        color: var(--accent-text);
-      }
-      .btn-primary:hover {
-        background: var(--accent-hover);
-      }
-      .btn-primary:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-      }
-      .btn-secondary {
-        background: transparent;
-        color: var(--text-muted);
-        border: 1px solid var(--border);
-      }
-      .btn-secondary:hover {
-        border-color: var(--text-muted);
-      }
-      .btn-secondary:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-      }
-
-      /* Wallet grid */
-      .wallet-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 0.5rem;
-      }
-      .wallet-btn {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0.75rem;
-        background: var(--bg);
-        border: 1px solid var(--border);
-        border-radius: var(--radius-sm);
-        color: var(--text);
-        font-size: 0.85rem;
-        font-weight: 600;
-        cursor: pointer;
-        transition: border-color 0.15s;
-        font-family: inherit;
-      }
-      .wallet-btn:hover {
-        border-color: var(--accent);
-      }
-      .wallet-btn:disabled {
-        opacity: 0.5;
-      }
-      .wallet-btn img {
-        width: 24px;
-        height: 24px;
-        border-radius: 6px;
-      }
-
-      /* Status + progress */
-      .status {
-        padding: 0.6rem 0.8rem;
-        border-radius: var(--radius-sm);
-        font-size: 0.82rem;
-        margin-top: 0.5rem;
-      }
-      .status.info {
-        background: rgba(59, 130, 246, 0.1);
-        color: #93c5fd;
-      }
-      .status.error {
-        background: var(--error-bg);
-        color: var(--error-text);
-      }
-      .status.success {
-        background: var(--success-bg);
-        color: var(--success-text);
-      }
-      .progress-bar {
-        height: 4px;
-        background: var(--border);
-        border-radius: 2px;
-        margin-top: 0.75rem;
-        overflow: hidden;
-      }
-      .progress-fill {
-        height: 100%;
-        background: var(--accent);
-        width: 0%;
-        transition: width 0.3s;
-      }
-      .spinner {
-        display: inline-block;
-        width: 14px;
-        height: 14px;
-        border: 2px solid rgba(255, 255, 255, 0.3);
-        border-top-color: #fff;
-        border-radius: 50%;
-        animation: spin 0.6s linear infinite;
-        vertical-align: middle;
-        margin-right: 0.4rem;
-      }
-      @keyframes spin {
-        to {
-          transform: rotate(360deg);
-        }
-      }
-      .hidden {
-        display: none !important;
-      }
-      .explorer-link {
-        color: var(--accent);
-        text-decoration: none;
-      }
-      a {
-        color: var(--accent);
-      }
-      .section {
-        margin-bottom: 0.75rem;
-      }
+      .container { max-width: 520px; width: 100%; padding: 1.5rem; }
+      .logo { text-align: center; margin-bottom: 1.25rem; }
+      .logo h1 { font-size: 2.2rem; font-weight: 700; }
+      .logo .pump { color: var(--accent); }
+      .logo .sub { display: block; font-size: 0.8rem; font-weight: 500; color: var(--text-light); letter-spacing: 0.12em; text-transform: uppercase; margin-top: 0.3rem; }
+      .phase-dots { display: flex; justify-content: center; gap: 0.5rem; margin-bottom: 1rem; }
+      .phase-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--border); transition: background 0.3s; }
+      .phase-dot.active { background: var(--accent); }
+      .phase-dot.done { background: var(--accent); opacity: 0.5; }
+      .phase-line { width: 24px; height: 2px; background: var(--border); align-self: center; }
+      .phase-line.done { background: var(--accent); opacity: 0.5; }
+      .phase-label { font-size: 0.75rem; color: var(--text-light); text-align: center; margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 0.1em; }
+      .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 0.75rem; }
+      .card h2 { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 0.75rem; font-weight: 600; }
+      .token-name { font-size: 1.4rem; font-weight: 700; margin-bottom: 0.15rem; }
+      .token-symbol { font-size: 0.95rem; color: var(--accent); font-weight: 600; margin-bottom: 0.5rem; }
+      .token-desc { font-size: 0.82rem; color: var(--text-muted); line-height: 1.4; margin-bottom: 0.5rem; }
+      .meta-row { display: flex; justify-content: space-between; padding: 0.35rem 0; border-bottom: 1px solid var(--border); }
+      .meta-label { color: var(--text-muted); font-size: 0.82rem; }
+      .meta-value { font-weight: 600; font-size: 0.82rem; }
+      .image-wrap { text-align: center; margin-bottom: 0.75rem; position: relative; }
+      .image-wrap img { max-width: 200px; max-height: 200px; border-radius: var(--radius-sm); border: 2px solid var(--border); }
+      .image-placeholder { width: 200px; height: 200px; margin: 0 auto; border-radius: var(--radius-sm); border: 2px dashed var(--border); display: flex; align-items: center; justify-content: center; color: var(--text-light); font-size: 0.85rem; text-align: center; padding: 1rem; }
+      .image-overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(13,13,15,0.85); border-radius: var(--radius-sm); color: var(--text-light); font-size: 0.85rem; }
+      .btn { width: 100%; padding: 0.9rem; border: none; border-radius: var(--radius-sm); font-size: 1rem; font-weight: 700; cursor: pointer; transition: all 0.15s; font-family: inherit; }
+      .btn-primary { background: var(--accent); color: var(--accent-text); }
+      .btn-primary:hover { background: var(--accent-hover); }
+      .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+      .btn-secondary { background: transparent; color: var(--text-muted); border: 1px solid var(--border); }
+      .btn-secondary:hover { border-color: var(--text-muted); }
+      .btn-secondary:disabled { opacity: 0.5; cursor: not-allowed; }
+      .wallet-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+      .wallet-btn { display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text); font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: border-color 0.15s; font-family: inherit; }
+      .wallet-btn:hover { border-color: var(--accent); }
+      .wallet-btn:disabled { opacity: 0.5; }
+      .wallet-btn img { width: 24px; height: 24px; border-radius: 6px; }
+      .status { padding: 0.6rem 0.8rem; border-radius: var(--radius-sm); font-size: 0.82rem; margin-top: 0.5rem; }
+      .status.info { background: rgba(59,130,246,0.1); color: #93c5fd; }
+      .status.error { background: var(--error-bg); color: var(--error-text); }
+      .status.success { background: var(--success-bg); color: var(--success-text); }
+      .progress-bar { height: 4px; background: var(--border); border-radius: 2px; margin-top: 0.75rem; overflow: hidden; }
+      .progress-fill { height: 100%; background: var(--accent); width: 0%; transition: width 0.3s; }
+      .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.6s linear infinite; vertical-align: middle; margin-right: 0.4rem; }
+      @keyframes spin { to { transform: rotate(360deg); } }
+      .hidden { display: none !important; }
+      .explorer-link { color: var(--accent); text-decoration: none; }
+      a { color: var(--accent); }
+      .section { margin-bottom: 0.75rem; }
     </style>
   </head>
   <body>
     <div class="container">
       <div class="logo">
-        <h1><span class="pump">Pump</span>.fun</h1>
-        <span class="sub">Scout Launcher</span>
+        <h1><span class="pump">Pump</span>SDK</h1>
+        <span class="sub">Token Launcher</span>
       </div>
 
       <div class="phase-dots" id="phase-dots">
@@ -390,7 +98,7 @@
       </div>
       <div class="phase-label" id="phase-label">Review</div>
 
-      <!-- Phase 0: Review -->
+      <!-- Phase 0: Review + Connect Wallet (combined) -->
       <div id="phase-preview" class="section">
         <div class="card">
           <div class="image-wrap" id="image-wrap">
@@ -400,43 +108,25 @@
           <div class="token-name" id="token-name"></div>
           <div class="token-symbol" id="token-symbol"></div>
           <div class="token-desc" id="token-desc"></div>
-          <button class="btn btn-secondary" id="btn-generate" style="font-size: 0.85rem; padding: 0.6rem">
+          <div class="meta-row">
+            <span class="meta-label">Dev Buy</span>
+            <span class="meta-value" id="dev-buy-display">0 SOL</span>
+          </div>
+          <button class="btn btn-secondary" id="btn-generate" style="font-size:0.85rem; padding:0.6rem; margin-top:0.75rem">
             Generate New Image
           </button>
         </div>
         <div class="card">
-          <h2>Initial Dev Buy</h2>
-          <div class="sol-picker">
-            <div class="sol-presets">
-              <button class="sol-preset active" data-sol="0">0 SOL</button>
-              <button class="sol-preset" data-sol="0.1">0.1 SOL</button>
-              <button class="sol-preset" data-sol="0.5">0.5 SOL</button>
-              <button class="sol-preset" data-sol="1">1 SOL</button>
-            </div>
-            <input type="range" class="sol-slider" id="sol-slider" min="0" max="2" step="0.01" value="0" />
-            <div class="sol-display" id="sol-display">0 SOL</div>
-          </div>
-        </div>
-        <button class="btn btn-primary" id="btn-launch">Launch Token</button>
-      </div>
-
-      <!-- Phase 1: Wallet -->
-      <div id="phase-wallet" class="section hidden">
-        <div class="card">
-          <h2>Connect Wallet</h2>
+          <h2>Connect Wallet to Launch</h2>
           <div class="wallet-grid" id="wallet-list"></div>
-          <p
-            id="no-wallets"
-            class="hidden"
-            style="color: var(--text-light); font-size: 0.85rem; text-align: center; padding: 1rem"
-          >
+          <p id="no-wallets" class="hidden" style="color:var(--text-light); font-size:0.85rem; text-align:center; padding:1rem">
             No Solana wallets detected. Install <a href="https://phantom.app" target="_blank">Phantom</a> or
             <a href="https://solflare.com" target="_blank">Solflare</a>.
           </p>
         </div>
       </div>
 
-      <!-- Phase 2: Sign -->
+      <!-- Phase 1: Sign -->
       <div id="phase-sign" class="section hidden">
         <div class="card" id="sign-card">
           <h2 id="sign-title">Sign Transaction</h2>
@@ -445,12 +135,12 @@
         </div>
       </div>
 
-      <!-- Phase 3: Done -->
+      <!-- Phase 2: Done -->
       <div id="phase-done" class="section hidden">
-        <div class="card" style="text-align: center">
-          <h2 style="color: var(--accent)">Token Launched!</h2>
-          <p style="color: var(--text-muted); font-size: 0.85rem">Your token is now live on Pump.fun</p>
-          <p id="mint-display" style="margin-top: 0.75rem; font-size: 0.8rem; color: var(--text-light)"></p>
+        <div class="card" style="text-align:center">
+          <h2 style="color:var(--accent)">Token Launched!</h2>
+          <p style="color:var(--text-muted); font-size:0.85rem">Your token is now live on Pump.fun</p>
+          <p id="mint-display" style="margin-top:0.75rem; font-size:0.8rem; color:var(--text-light)"></p>
         </div>
       </div>
 
@@ -461,7 +151,6 @@
     <script>
       var solanaWeb3 = window.solanaWeb3;
       var Connection = solanaWeb3.Connection;
-      var Transaction = solanaWeb3.Transaction;
       var VersionedTransaction = solanaWeb3.VersionedTransaction;
 
       var API_BASE = window.location.origin;
@@ -469,70 +158,21 @@
       var csrfToken = "";
       var rpcUrl = "https://api.mainnet-beta.solana.com";
       var sessionData = null;
-      var selectedSol = 0;
       var connectedWallet = null;
       var currentTransactions = [];
 
-      var PHASES = ["preview", "wallet", "sign", "done"];
-      var PHASE_NAMES = ["Review", "Connect Wallet", "Sign", "Complete"];
+      var PHASES = ["preview", "sign", "done"];
+      var PHASE_NAMES = ["Review & Connect", "Sign", "Complete"];
 
       var KNOWN_WALLETS = [
-        {
-          name: "Phantom",
-          check: function () {
-            return window.phantom?.solana;
-          },
-          icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128' fill='none'%3E%3Crect width='128' height='128' rx='26' fill='%23AB9FF2'/%3E%3Cpath d='M110.584 64.914h-7.117c0-24.84-20.321-44.97-45.4-44.97-24.772 0-44.9 19.693-45.39 44.144-.503 25.097 20.57 46.796 45.834 46.796h2.049c22.212 0 42.127-14.478 49.085-35.608a4.288 4.288 0 00-4.06-5.768h-.001zm-73.894 7.16a5.393 5.393 0 01-5.4 5.38 5.393 5.393 0 01-5.4-5.38 5.393 5.393 0 015.4-5.38 5.393 5.393 0 015.4 5.38zm22.2 0a5.393 5.393 0 01-5.4 5.38 5.393 5.393 0 01-5.4-5.38 5.393 5.393 0 015.4-5.38 5.393 5.393 0 015.4 5.38z' fill='%23FFF'/%3E%3C/svg%3E",
-        },
-        {
-          name: "Solflare",
-          check: function () {
-            return window.solflare;
-          },
-          icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Crect width='128' height='128' rx='26' fill='%23FC7227'/%3E%3Cpath d='M64 28l28 36-28 36-28-36z' fill='%23FFF'/%3E%3C/svg%3E",
-        },
-        {
-          name: "Backpack",
-          check: function () {
-            return window.backpack;
-          },
-          icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Crect width='128' height='128' rx='26' fill='%23E33E3F'/%3E%3Cpath d='M44 48h40v40H44z' rx='8' fill='%23FFF'/%3E%3Cpath d='M52 36h24v16H52z' rx='4' fill='%23FFF'/%3E%3C/svg%3E",
-        },
-        {
-          name: "Coinbase",
-          check: function () {
-            return window.coinbaseSolana;
-          },
-          icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Crect width='128' height='128' rx='26' fill='%230052FF'/%3E%3Ccircle cx='64' cy='64' r='32' fill='%23FFF'/%3E%3Ccircle cx='64' cy='64' r='16' fill='%230052FF'/%3E%3C/svg%3E",
-        },
-        {
-          name: "Trust Wallet",
-          check: function () {
-            return window.trustwallet?.solana;
-          },
-          icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Crect width='128' height='128' rx='26' fill='%230500FF'/%3E%3Cpath d='M64 28c16 12 28 8 28 8s-4 40-28 64C40 76 36 36 36 36s12 4 28-8z' fill='%23FFF'/%3E%3C/svg%3E",
-        },
-        {
-          name: "Brave",
-          check: function () {
-            return window.braveSolana || window.brave?.solana;
-          },
-          icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Crect width='128' height='128' rx='26' fill='%23FB542B'/%3E%3Cpath d='M64 24l28 16v40L64 104 36 80V40z' fill='%23FFF'/%3E%3C/svg%3E",
-        },
-        {
-          name: "Exodus",
-          check: function () {
-            return window.exodus?.solana;
-          },
-          icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Crect width='128' height='128' rx='26' fill='%231F1B4D'/%3E%3Cpath d='M36 44h56l-20 20 20 20H36l20-20z' fill='%238B6CDF'/%3E%3C/svg%3E",
-        },
-        {
-          name: "OKX",
-          check: function () {
-            return window.okxwallet?.solana;
-          },
-          icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Crect width='128' height='128' rx='26' fill='%23000'/%3E%3Crect x='28' y='28' width='28' height='28' rx='4' fill='%23FFF'/%3E%3Crect x='72' y='28' width='28' height='28' rx='4' fill='%23FFF'/%3E%3Crect x='50' y='50' width='28' height='28' rx='4' fill='%23FFF'/%3E%3Crect x='28' y='72' width='28' height='28' rx='4' fill='%23FFF'/%3E%3Crect x='72' y='72' width='28' height='28' rx='4' fill='%23FFF'/%3E%3C/svg%3E",
-        },
+        { name: "Phantom", check: function() { return window.phantom?.solana; }, icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128' fill='none'%3E%3Crect width='128' height='128' rx='26' fill='%23AB9FF2'/%3E%3Cpath d='M110.584 64.914h-7.117c0-24.84-20.321-44.97-45.4-44.97-24.772 0-44.9 19.693-45.39 44.144-.503 25.097 20.57 46.796 45.834 46.796h2.049c22.212 0 42.127-14.478 49.085-35.608a4.288 4.288 0 00-4.06-5.768h-.001zm-73.894 7.16a5.393 5.393 0 01-5.4 5.38 5.393 5.393 0 01-5.4-5.38 5.393 5.393 0 015.4-5.38 5.393 5.393 0 015.4 5.38zm22.2 0a5.393 5.393 0 01-5.4 5.38 5.393 5.393 0 01-5.4-5.38 5.393 5.393 0 015.4-5.38 5.393 5.393 0 015.4 5.38z' fill='%23FFF'/%3E%3C/svg%3E" },
+        { name: "Solflare", check: function() { return window.solflare; }, icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Crect width='128' height='128' rx='26' fill='%23FC7227'/%3E%3Cpath d='M64 28l28 36-28 36-28-36z' fill='%23FFF'/%3E%3C/svg%3E" },
+        { name: "Backpack", check: function() { return window.backpack; }, icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Crect width='128' height='128' rx='26' fill='%23E33E3F'/%3E%3Cpath d='M44 48h40v40H44z' rx='8' fill='%23FFF'/%3E%3Cpath d='M52 36h24v16H52z' rx='4' fill='%23FFF'/%3E%3C/svg%3E" },
+        { name: "Coinbase", check: function() { return window.coinbaseSolana; }, icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Crect width='128' height='128' rx='26' fill='%230052FF'/%3E%3Ccircle cx='64' cy='64' r='32' fill='%23FFF'/%3E%3Ccircle cx='64' cy='64' r='16' fill='%230052FF'/%3E%3C/svg%3E" },
+        { name: "Trust Wallet", check: function() { return window.trustwallet?.solana; }, icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Crect width='128' height='128' rx='26' fill='%230500FF'/%3E%3Cpath d='M64 28c16 12 28 8 28 8s-4 40-28 64C40 76 36 36 36 36s12 4 28-8z' fill='%23FFF'/%3E%3C/svg%3E" },
+        { name: "Brave", check: function() { return window.braveSolana || window.brave?.solana; }, icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Crect width='128' height='128' rx='26' fill='%23FB542B'/%3E%3Cpath d='M64 24l28 16v40L64 104 36 80V40z' fill='%23FFF'/%3E%3C/svg%3E" },
+        { name: "Exodus", check: function() { return window.exodus?.solana; }, icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Crect width='128' height='128' rx='26' fill='%231F1B4D'/%3E%3Cpath d='M36 44h56l-20 20 20 20H36l20-20z' fill='%238B6CDF'/%3E%3C/svg%3E" },
+        { name: "OKX", check: function() { return window.okxwallet?.solana; }, icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Crect width='128' height='128' rx='26' fill='%23000'/%3E%3Crect x='28' y='28' width='28' height='28' rx='4' fill='%23FFF'/%3E%3Crect x='72' y='28' width='28' height='28' rx='4' fill='%23FFF'/%3E%3Crect x='50' y='50' width='28' height='28' rx='4' fill='%23FFF'/%3E%3Crect x='28' y='72' width='28' height='28' rx='4' fill='%23FFF'/%3E%3Crect x='72' y='72' width='28' height='28' rx='4' fill='%23FFF'/%3E%3C/svg%3E" },
       ];
 
       /* ===== Phase management ===== */
@@ -550,7 +190,7 @@
           document.getElementById("pline-" + li).className = li < idx ? "phase-line done" : "phase-line";
         }
         document.getElementById("phase-label").textContent = PHASE_NAMES[idx];
-        PHASES.forEach(function (p) {
+        PHASES.forEach(function(p) {
           var el = document.getElementById("phase-" + p);
           if (el) el.classList.toggle("hidden", p !== name);
         });
@@ -572,9 +212,7 @@
         div.innerHTML = msg;
         area.appendChild(div);
       }
-      function clearStatus() {
-        document.getElementById("status-area").innerHTML = "";
-      }
+      function clearStatus() { document.getElementById("status-area").textContent = ""; }
 
       function decodeBase64(str) {
         var raw = atob(str);
@@ -589,56 +227,16 @@
           var idx = ALPHABET.indexOf(str[ci]);
           if (idx === -1) throw new Error("Invalid base58");
           var carry = idx;
-          for (var j = 0; j < bytes.length; j++) {
-            carry += bytes[j] * 58;
-            bytes[j] = carry & 0xff;
-            carry >>= 8;
-          }
-          while (carry > 0) {
-            bytes.push(carry & 0xff);
-            carry >>= 8;
-          }
+          for (var j = 0; j < bytes.length; j++) { carry += bytes[j] * 58; bytes[j] = carry & 0xff; carry >>= 8; }
+          while (carry > 0) { bytes.push(carry & 0xff); carry >>= 8; }
         }
         for (var k = 0; k < str.length && str[k] === "1"; k++) bytes.push(0);
         return new Uint8Array(bytes.reverse());
       }
       function decodeTx(str) {
-        var looksBase64 =
-          /^[A-Za-z0-9+/=]+$/.test(str) &&
-          str.length > 100 &&
-          (str.indexOf("+") !== -1 || str.indexOf("/") !== -1 || str.endsWith("="));
-        if (looksBase64) {
-          try {
-            return decodeBase64(str);
-          } catch (_) {}
-        }
+        var looksBase64 = /^[A-Za-z0-9+/=]+$/.test(str) && str.length > 100 && (str.indexOf("+") !== -1 || str.indexOf("/") !== -1 || str.endsWith("="));
+        if (looksBase64) { try { return decodeBase64(str); } catch(_) {} }
         return decodeBase58(str);
-      }
-
-      /* ===== SOL picker ===== */
-
-      function initSolPicker() {
-        var slider = document.getElementById("sol-slider");
-        var display = document.getElementById("sol-display");
-        var presets = document.querySelectorAll(".sol-preset");
-
-        function updateSol(val) {
-          selectedSol = parseFloat(val);
-          display.textContent = selectedSol + " SOL";
-          slider.value = val;
-          presets.forEach(function (b) {
-            b.classList.toggle("active", parseFloat(b.dataset.sol) === selectedSol);
-          });
-        }
-
-        slider.addEventListener("input", function () {
-          updateSol(this.value);
-        });
-        presets.forEach(function (b) {
-          b.addEventListener("click", function () {
-            updateSol(this.dataset.sol);
-          });
-        });
       }
 
       /* ===== Image handling ===== */
@@ -647,15 +245,8 @@
         var img = document.getElementById("token-image");
         var placeholder = document.getElementById("image-placeholder");
         if (url) {
-          img.onload = function () {
-            img.classList.remove("hidden");
-            placeholder.classList.add("hidden");
-          };
-          img.onerror = function () {
-            placeholder.textContent = "Failed to load image";
-            placeholder.classList.remove("hidden");
-            img.classList.add("hidden");
-          };
+          img.onload = function() { img.classList.remove("hidden"); placeholder.classList.add("hidden"); };
+          img.onerror = function() { placeholder.textContent = "Failed to load image"; placeholder.classList.remove("hidden"); img.classList.add("hidden"); };
           img.src = url;
         } else {
           img.classList.add("hidden");
@@ -673,7 +264,7 @@
 
         var overlay = document.createElement("div");
         overlay.className = "image-overlay";
-        overlay.innerHTML = '<span class="spinner"></span> Generating...';
+        overlay.textContent = "Generating...";
         wrap.appendChild(overlay);
 
         try {
@@ -682,10 +273,7 @@
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ csrfToken: csrfToken }),
           });
-          if (!resp.ok) {
-            var errData = await resp.json();
-            throw new Error(errData.error || "Failed");
-          }
+          if (!resp.ok) { var errData = await resp.json(); throw new Error(errData.error || "Failed"); }
           var data = await resp.json();
           sessionData.imageUrl = data.imageUrl;
           renderImage(data.imageUrl);
@@ -698,53 +286,49 @@
         }
       }
 
-      /* ===== Wallet connect ===== */
+      /* ===== Wallet connect + approve ===== */
 
       function renderWallets() {
         var list = document.getElementById("wallet-list");
         var found = 0;
-        KNOWN_WALLETS.forEach(function (w) {
+        KNOWN_WALLETS.forEach(function(w) {
           var provider = w.check();
           if (!provider) return;
           found++;
           var btn = document.createElement("button");
           btn.className = "wallet-btn";
-          btn.innerHTML = '<img src="' + w.icon + '" alt="' + w.name + '"> ' + w.name;
-          btn.addEventListener("click", function () {
-            connectAndApprove(w.name, provider);
-          });
+          var img = document.createElement("img");
+          img.src = w.icon;
+          img.alt = w.name;
+          btn.appendChild(img);
+          btn.appendChild(document.createTextNode(" " + w.name));
+          btn.addEventListener("click", function() { connectAndApprove(w.name, provider); });
           list.appendChild(btn);
         });
         if (found === 0) document.getElementById("no-wallets").classList.remove("hidden");
       }
 
       async function connectAndApprove(name, provider) {
-        document.querySelectorAll(".wallet-btn").forEach(function (b) {
-          b.disabled = true;
-        });
+        document.querySelectorAll(".wallet-btn").forEach(function(b) { b.disabled = true; });
         clearStatus();
-        showStatusHtml('<span class="spinner"></span> Connecting wallet...', "info");
+        showStatus("Connecting " + name + "...", "info");
 
         try {
           var resp;
-          try {
-            resp = await provider.connect();
-          } catch (connectErr) {
-            console.error("connect() error:", connectErr);
-            throw new Error("Wallet connect failed: " + (connectErr.message || connectErr));
-          }
+          try { resp = await provider.connect(); }
+          catch (connectErr) { throw new Error("Wallet connect failed: " + (connectErr.message || connectErr)); }
+
           var rawKey = resp.publicKey || provider.publicKey;
           var pubkey = typeof rawKey === "string" ? rawKey : (rawKey.toBase58 ? rawKey.toBase58() : rawKey.toString());
-          console.log("Connected wallet:", pubkey);
           connectedWallet = { name: name, provider: provider, pubkey: pubkey };
 
           clearStatus();
-          showStatusHtml('<span class="spinner"></span> Building launch transaction...', "info");
+          showStatus("Building launch transaction...", "info");
 
           var approveResp = await fetch(API_BASE + "/api/scout/" + SESSION_ID + "/approve", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ wallet: pubkey, initialBuySol: selectedSol, csrfToken: csrfToken }),
+            body: JSON.stringify({ wallet: pubkey, csrfToken: csrfToken }),
           });
 
           if (!approveResp.ok) {
@@ -759,19 +343,15 @@
           document.getElementById("sign-title").textContent = data.description;
           document.getElementById("sign-btn").disabled = false;
           document.getElementById("sign-btn").textContent = "Sign " + data.phase;
-          document.getElementById("sign-btn").onclick = function () {
-            signAndAdvance(data.phase);
-          };
+          document.getElementById("sign-btn").onclick = function() { signAndAdvance(data.phase); };
         } catch (err) {
           clearStatus();
           showStatus("Failed: " + err.message, "error");
-          document.querySelectorAll(".wallet-btn").forEach(function (b) {
-            b.disabled = false;
-          });
+          document.querySelectorAll(".wallet-btn").forEach(function(b) { b.disabled = false; });
         }
       }
 
-      /* ===== Partial-signature helpers (Phantom rejects pre-signed txs) ===== */
+      /* ===== Partial-signature helpers ===== */
 
       function isNonEmptySig(sig) {
         for (var j = 0; j < sig.length; j++) { if (sig[j] !== 0) return true; }
@@ -802,7 +382,7 @@
         var signatures = [];
 
         for (var i = 0; i < currentTransactions.length; i++) {
-          fill.style.width = (i / currentTransactions.length) * 100 + "%";
+          fill.style.width = ((i / currentTransactions.length) * 100) + "%";
           try {
             var txBytes = decodeTx(currentTransactions[i]);
             var vtx = VersionedTransaction.deserialize(txBytes);
@@ -826,19 +406,12 @@
             signatures.push(sig);
 
             showStatusHtml(
-              phase +
-                " tx " +
-                (i + 1) +
-                "/" +
-                currentTransactions.length +
-                " confirmed. " +
-                '<a class="explorer-link" href="https://solscan.io/tx/' +
-                sig +
-                '" target="_blank">View on Solscan</a>',
-              "success",
+              phase + " tx " + (i + 1) + "/" + currentTransactions.length + " confirmed. " +
+              '<a class="explorer-link" href="https://solscan.io/tx/' + sig + '" target="_blank">View on Solscan</a>',
+              "success"
             );
           } catch (err) {
-            showStatus(phase + " tx " + (i + 1) + " failed: " + (err.message || "").replace(/</g, "&lt;"), "error");
+            showStatus(phase + " tx " + (i + 1) + " failed: " + (err.message || ""), "error");
             btn.textContent = "Retry";
             btn.disabled = false;
             bar.classList.add("hidden");
@@ -849,10 +422,13 @@
         fill.style.width = "100%";
         bar.classList.add("hidden");
 
-        var nextEndpoint =
-          phase === "launch" ? "/api/scout/" + SESSION_ID + "/launch-signed" : "/api/scout/" + SESSION_ID + "/complete";
-
         try {
+          var endpointMap = {
+            launch: "/api/scout/" + SESSION_ID + "/launch-signed",
+            dev_buy: "/api/scout/" + SESSION_ID + "/dev-buy-signed",
+            fee_config: "/api/scout/" + SESSION_ID + "/complete",
+          };
+          var nextEndpoint = endpointMap[phase] || "/api/scout/" + SESSION_ID + "/complete";
           var nextResp = await fetch(API_BASE + nextEndpoint, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -866,15 +442,11 @@
               document.getElementById("sign-title").textContent = nextData.description;
               btn.textContent = "Sign " + nextData.phase;
               btn.disabled = false;
-              btn.onclick = function () {
-                signAndAdvance(nextData.phase);
-              };
+              btn.onclick = function() { signAndAdvance(nextData.phase); };
               return;
             }
           }
-        } catch (_e) {
-          /* best-effort */
-        }
+        } catch (_e) { /* best-effort */ }
 
         setPhase("done");
         document.getElementById("mint-display").textContent = "Mint: " + (sessionData.mintPublicKey || "");
@@ -891,18 +463,13 @@
           rpcUrl = sessionData.rpcUrl || rpcUrl;
 
           document.getElementById("token-name").textContent = sessionData.tokenName || "";
-          document.getElementById("token-symbol").textContent = sessionData.tokenSymbol
-            ? "$" + sessionData.tokenSymbol
-            : "";
+          document.getElementById("token-symbol").textContent = sessionData.tokenSymbol ? "$" + sessionData.tokenSymbol : "";
           document.getElementById("token-desc").textContent = sessionData.description || "";
+          document.getElementById("dev-buy-display").textContent = (sessionData.initialBuySol || 0) + " SOL";
           renderImage(sessionData.imageUrl);
-          initSolPicker();
           renderWallets();
 
           document.getElementById("btn-generate").addEventListener("click", regenerateImage);
-          document.getElementById("btn-launch").addEventListener("click", function () {
-            setPhase("wallet");
-          });
         } catch (err) {
           showStatus("Failed to load session: " + err.message, "error");
         }

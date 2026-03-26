@@ -7,7 +7,7 @@ import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Keypair } from "@solana/web3.js";
 
-import { buildFeeConfigTxs, buildLaunchTx } from "./launch-builder.js";
+import { buildFeeConfigTxs, buildLaunchTx, buildDevBuyTx } from "./launch-builder.js";
 import { getSession, setSession, pruneAll } from "./session-store.js";
 import { generateTokenImage, buildImagePrompt } from "../client/imagegen.js";
 import { uploadToIpfs } from "../client/ipfs.js";
@@ -79,7 +79,7 @@ interface ScoutSession {
   priorityFee: number;
   meta: Record<string, string>;
   rpcUrl: string;
-  phase: "preview" | "launch" | "fee_config" | "complete";
+  phase: "preview" | "launch" | "dev_buy" | "fee_config" | "complete";
   wallet: string | null;
   mintPublicKey: string;
   mintKeypairSecret: string;
@@ -497,6 +497,7 @@ function registerScoutRoutes(app: express.Express, scoutPageHtml: string): void 
       phase: session.phase,
       csrfToken: session.csrfToken,
       mintPublicKey: session.mintPublicKey,
+      initialBuySol: session.initialBuySol,
     });
   });
 
@@ -592,7 +593,7 @@ function registerScoutRoutes(app: express.Express, scoutPageHtml: string): void 
       return;
     }
 
-    const { wallet, initialBuySol } = req.body;
+    const { wallet } = req.body;
     if (!wallet || typeof wallet !== "string") {
       res.status(400).json({ error: "Missing wallet." });
       return;
@@ -613,7 +614,7 @@ function registerScoutRoutes(app: express.Express, scoutPageHtml: string): void 
       }
       const mintKeypair = Keypair.fromSecretKey(new Uint8Array(secretBytes));
       console.error(`[approve-debug] mintKeypair pubkey=${mintKeypair.publicKey.toBase58()} from session JSON (${secretBytes.length} bytes)`);
-      const buySol = typeof initialBuySol === "number" ? initialBuySol : 0;
+      const buySol = session.initialBuySol;
 
       let result;
       try {
@@ -677,6 +678,72 @@ function registerScoutRoutes(app: express.Express, scoutPageHtml: string): void 
     session.signatures.push(...(req.body.signatures || []));
 
     try {
+      /* If dev buy > 0, chain a buy tx before fee config */
+      if (session.initialBuySol > 0) {
+        const buyTx = await buildDevBuyTx(
+          session.wallet!,
+          session.mintPublicKey,
+          session.initialBuySol,
+          session.slippage,
+          session.priorityFee,
+        );
+
+        session.phase = "dev_buy";
+        await setSession(req.params.sessionId, session);
+
+        res.json({
+          phase: "dev_buy",
+          transactions: [buyTx],
+          description: `Dev buy ${session.initialBuySol} SOL of $${session.tokenSymbol}`,
+        });
+        return;
+      }
+
+      const claimers = session.claimersArray.map((c) => (c === WALLET_PLACEHOLDER ? session.wallet! : c));
+      const result = await buildFeeConfigTxs(
+        session.wallet!,
+        session.mintPublicKey,
+        claimers,
+        session.basisPointsArray,
+      );
+
+      session.phase = "fee_config";
+      await setSession(req.params.sessionId, session);
+
+      res.json({
+        phase: "fee_config",
+        transactions: result.transactions,
+        description: `Fee setup for $${session.tokenSymbol}`,
+      });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      res.status(500).json({ error: msg });
+    }
+  });
+
+  /* After dev buy is signed, chain to fee config */
+  app.post("/api/scout/:sessionId/dev-buy-signed", async (req, res) => {
+    if (!isValidOrigin(req)) {
+      res.status(403).json({ error: "Invalid origin." });
+      return;
+    }
+    const session = await getSession<ScoutSession>(req.params.sessionId);
+    if (!session || session.type !== "scout") {
+      res.status(404).json({ error: "Session not found." });
+      return;
+    }
+    if (!isValidCsrf(req, session)) {
+      res.status(403).json({ error: "Invalid CSRF token." });
+      return;
+    }
+    if (session.phase !== "dev_buy") {
+      res.status(400).json({ error: `Expected phase 'dev_buy', got '${session.phase}'.` });
+      return;
+    }
+
+    session.signatures.push(...(req.body.signatures || []));
+
+    try {
       const claimers = session.claimersArray.map((c) => (c === WALLET_PLACEHOLDER ? session.wallet! : c));
       const result = await buildFeeConfigTxs(
         session.wallet!,
@@ -727,6 +794,7 @@ export interface ScoutSessionParams {
   tokenSymbol?: string;
   description?: string;
   imageUrl?: string;
+  initialBuySol?: number;
   claimersArray?: string[];
   basisPointsArray?: number[];
   slippage?: number;
@@ -788,7 +856,7 @@ export async function createScoutSession(params: ScoutSessionParams = {}): Promi
     mintPublicKey,
     mintKeypairSecret: Buffer.from(mintKeypair.secretKey).toString("base64"),
     metadataUri: null,
-    initialBuySol: 0,
+    initialBuySol: params.initialBuySol ?? 0,
     signatures: [],
     createdAt: Date.now(),
   } satisfies ScoutSession);

@@ -155,7 +155,7 @@ export async function buildLaunchTx(
     tokenMetadata: { name, symbol, uri: metadataUri },
     mint: mintAddress,
     denominatedInSol: "true",
-    amount: initialBuySol,
+    amount: 0,
     slippage,
     priorityFee,
     pool: "pump",
@@ -168,6 +168,41 @@ export async function buildLaunchTx(
 
   const txBase64 = Buffer.from(tx.serialize()).toString("base64");
   return { transaction: txBase64, mintAddress };
+}
+
+/**
+ * Build a dev-buy transaction for an already-created token.
+ * Called after the create tx is confirmed on-chain.
+ * @param wallet - The buyer wallet address.
+ * @param mintAddress - The token mint address.
+ * @param buySol - Amount of SOL to spend on the dev buy.
+ * @param slippage - Slippage tolerance percentage.
+ * @param priorityFee - Priority fee in SOL.
+ * @returns Base64-encoded serialized transaction.
+ */
+export async function buildDevBuyTx(
+  wallet: string,
+  mintAddress: string,
+  buySol: number,
+  slippage: number,
+  priorityFee: number,
+): Promise<string> {
+  const body = {
+    publicKey: wallet,
+    action: "buy",
+    mint: mintAddress,
+    denominatedInSol: "true",
+    amount: buySol,
+    slippage,
+    priorityFee,
+    pool: "pump",
+  };
+
+  console.error("[buildDevBuyTx] POST /trade-local body:", JSON.stringify(body));
+  const txBytes = await portalPostBinary("/trade-local", body);
+  const tx = VersionedTransaction.deserialize(txBytes);
+  const txBase64 = Buffer.from(tx.serialize()).toString("base64");
+  return txBase64;
 }
 
 /**

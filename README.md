@@ -1,6 +1,6 @@
 # PumpSDK
 
-> **Status: WIP (90%)** — Core launch pipeline works end-to-end. Signing, image gen, and PumpPortal integration are functional. Dev buy with low-balance wallets, slider UX, and some edge cases are being ironed out. Should be solid by morning.
+> **Status: WIP** — Core launch pipeline works end-to-end (create → sign → fee config). Currently building: dashboard UI, more trading tools, Telegram bot. Signing flow is stable — do not touch it.
 
 ```bash
 npx -y pumpsdk
@@ -176,14 +176,26 @@ The signing server didn't start. Check that nothing else is using port 3142 (`ne
 **"Session expired" / 410 when trying to sign**
 Default TTL is 1 hour. If you're getting 410s immediately, the issue is likely a stale server process running old code. Kill all node processes, rebuild, and restart. The session keypair is stored in `.sessions/sessions.json` and survives restarts.
 
-**PumpPortal returns 400: Bad Request**
-PumpPortal validates your wallet balance before building the transaction. If your dev buy amount + rent (~0.02 SOL) + priority fee exceeds your wallet balance, you get a silent 400. Fix: lower the dev buy, or set it to 0 and buy separately after launch. Also: do NOT include `isMayhemMode` in the payload — PumpPortal rejects unknown fields.
+**PumpPortal returns 400: Bad Request on token creation**
+As of March 2026, PumpPortal's `/api/trade-local` endpoint rejects `action: "create"` with any non-zero `amount`. This is universal — it happens with every wallet regardless of balance. The workaround: create with `amount: 0`, then issue a separate `action: "buy"` transaction after the create tx confirms on-chain. PumpSDK handles this two-step flow automatically.
 
-**Transaction built but Phantom signing fails / "Blockhash not found"**
+**PumpPortal 400 payload checklist**
+If you're building your own integration, these field types are strict:
+- `denominatedInSol` must be the **string** `"true"`, not boolean `true`
+- `amount` must be a **number** `0`, not string `"0"`
+- `slippage` and `priorityFee` must be **numbers**
+- `mint` must be the public key (base58) for Local API, or secret key (base58) for Lightning API — same field name, opposite contents
+- `tokenMetadata.uri` must be a reachable IPFS/HTTPS URL with valid JSON metadata
+- `Content-Type: application/json` header is required — Node.js fetch does not set it by default
+
+**"bad secret key size" on approve**
+`Keypair.fromSecretKey()` requires exactly 64 bytes. If you see this error, the mint keypair was stored or retrieved incorrectly. Common causes: storing `Keypair.fromSeed()` output (32 bytes) instead of `Keypair.generate().secretKey` (64 bytes), double base64 encoding, or the keypair was in an in-memory Map that got wiped by a server restart while the session JSON on disk survived.
+
+**Transaction built but submission fails / 403 from RPC**
 The public Solana RPC (`api.mainnet-beta.solana.com`) rate-limits and blocks `sendTransaction`. Use a real RPC provider. Helius has a free tier: set `SOLANA_RPC_URL=https://mainnet.helius-rpc.com/?api-key=YOUR_KEY` in your `.env`.
 
 **CSP blocks RPC requests in the browser**
-If you use a custom RPC (Helius, QuickNode, etc.), its domain must be in the Content-Security-Policy `connect-src` directive in both `page.html` and `scout-page.html`. By default, `*.helius-rpc.com` is whitelisted. Add your provider's domain if you use a different one.
+If you use a custom RPC (Helius, QuickNode, etc.), its domain must be in the Content-Security-Policy `connect-src` directive in both `page.html` and `scout-page.html`. Include **both** `https://` and `wss://` — Solana's `confirmTransaction` uses WebSocket. By default, `*.helius-rpc.com` is whitelisted for both protocols. Add your provider's domain if you use a different one.
 
 **Wallet not detected on signing page**
 The page checks for Phantom, Solflare, Backpack, Coinbase, Trust, Brave, Exodus, Slope, Torus, and MathWallet. Make sure your wallet extension is installed, unlocked, and set to mainnet.
@@ -200,12 +212,21 @@ It shouldn't — every transaction requires your wallet signature. Run with `PUM
 **Claude says the tools aren't available**
 Make sure the MCP server config points at the right command. Run `npx -y pumpsdk` in a terminal first to confirm it starts. Node 20+ required.
 
+### PumpPortal API changes (late 2025 — 2026)
+
+- **create_v2 / Token2022** (Nov 2025): Pump.fun added a new on-chain instruction using Token2022 instead of Metaplex. PumpPortal abstracts this — just set `pool: "pump"`. The `isMayhemMode` field defaults to `"false"` and can be omitted.
+- **New pool types**: `pump-amm`, `launchlab`, `raydium-cpmm`, `bonk`, `auto` are now valid `pool` values. For standard Pump.fun launches, use `"pump"`.
+- **Create + buy broken**: As of March 2026, non-zero `amount` on `action: "create"` returns 400. Use two separate transactions.
+
 ### Best practices
 
 - **Use a real RPC.** Helius free tier is fine. The public mainnet RPC will reject your transactions.
-- **Kill stale servers.** If you're iterating, always kill old node processes before restarting. Zombie servers serve stale code.
-- **Start with 0 dev buy** to prove the pipeline works, then add a dev buy once you've confirmed your wallet has enough SOL.
+- **Kill stale servers.** If you're iterating, always kill old node processes before restarting. Zombie servers serve stale code. On Windows: `cmd.exe /c "taskkill /F /IM node.exe"`.
+- **Start with 0 dev buy** to prove the pipeline works, then buy separately after launch.
 - **Keep `.env` out of git.** It's in `.gitignore` by default. Never commit RPC keys or API keys.
+- **Verify the binary matches the source.** After editing code, rebuild AND restart. A running node process uses the code it loaded at startup, not the current dist.
+- **Test API calls in isolation.** Before debugging through the full stack, test PumpPortal with a standalone `node -e` script or curl. 10 seconds vs 10 minutes.
+- **CSP is part of deployment.** When you change an RPC URL, update the `connect-src` in all HTML files. Include both `https://` and `wss://` protocols.
 
 ---
 
