@@ -125,11 +125,12 @@ function isValidCsrf(req: express.Request, session: Session): boolean {
 /**
  * Load HTML page templates relative to this module.
  */
-function loadPages(): { page: string; scoutPage: string } {
+function loadPages(): { page: string; scoutPage: string; dashboardPage: string } {
   const thisDir = dirname(fileURLToPath(import.meta.url));
   return {
     page: readFileSync(resolve(thisDir, "page.html"), "utf-8"),
     scoutPage: readFileSync(resolve(thisDir, "scout-page.html"), "utf-8"),
+    dashboardPage: readFileSync(resolve(thisDir, "dashboard.html"), "utf-8"),
   };
 }
 
@@ -138,10 +139,138 @@ function loadPages(): { page: string; scoutPage: string } {
  * @param app - Express app instance.
  * @param pages - Pre-loaded HTML page content.
  */
-function registerRoutes(app: express.Express, pages: { page: string; scoutPage: string }): void {
+function registerRoutes(app: express.Express, pages: { page: string; scoutPage: string; dashboardPage: string }): void {
   registerSignRoutes(app, pages.page);
   registerLaunchRoutes(app, pages.page);
   registerScoutRoutes(app, pages.scoutPage);
+  registerDashboardRoutes(app, pages.dashboardPage);
+}
+
+/**
+ * Register dashboard routes: serves the dashboard page and provides
+ * a browser-callable session creation endpoint for the launch flow.
+ * @param app - Express app instance.
+ * @param dashboardHtml - Pre-loaded dashboard HTML with %%RPC_URL%% placeholder.
+ */
+function registerDashboardRoutes(app: express.Express, dashboardHtml: string): void {
+  const rpcUrl = process.env.SOLANA_RPC_URL || "https://api.mainnet-beta.solana.com";
+  const renderedHtml = dashboardHtml.replace("%%RPC_URL%%", rpcUrl);
+
+  app.get("/dashboard", (_req, res) => {
+    res.type("html").send(renderedHtml);
+  });
+
+  /** Proxy price data via CryptoCompare (free, no key). */
+  app.get("/api/dashboard/prices", async (_req, res) => {
+    try {
+      const ccRes = await fetch(
+        "https://min-api.cryptocompare.com/data/pricemultifull?fsyms=BTC,ETH,SOL,DOGE&tsyms=USD",
+      );
+      const raw = await ccRes.json();
+      const result: Record<string, { usd: number; usd_24h_change: number }> = {};
+      const syms = raw.RAW as Record<string, Record<string, { PRICE: number; CHANGEPCT24HOUR: number }>>;
+      const idMap: Record<string, string> = { BTC: "bitcoin", ETH: "ethereum", SOL: "solana", DOGE: "dogecoin" };
+      for (const [sym, data] of Object.entries(syms)) {
+        const usdData = data.USD;
+        result[idMap[sym] || sym.toLowerCase()] = { usd: usdData.PRICE, usd_24h_change: usdData.CHANGEPCT24HOUR };
+      }
+      res.json(result);
+    } catch (err) {
+      res.status(502).json({ error: "Price fetch failed" });
+    }
+  });
+
+  /** Proxy CryptoCompare chart data (returns CoinGecko-compatible format). */
+  app.get("/api/dashboard/chart", async (req, res) => {
+    try {
+      const days = Number(req.query.days || 1);
+      const sym = String(req.query.coin || "solana") === "solana" ? "SOL" : "BTC";
+      const limit = Math.min(Math.max(Math.round(days * 24), 12), 720);
+      const ccRes = await fetch(
+        `https://min-api.cryptocompare.com/data/v2/histohour?fsym=${sym}&tsym=USD&limit=${limit}`,
+      );
+      const raw = await ccRes.json();
+      const prices = (raw.Data?.Data || []).map((d: { time: number; close: number }) => [d.time * 1000, d.close]);
+      res.json({ prices });
+    } catch (err) {
+      res.status(502).json({ error: "Chart fetch failed" });
+    }
+  });
+
+  /** Generate token image via fal.ai Nano Banana. */
+  app.post("/api/dashboard/generate-image", async (req, res) => {
+    if (!isValidOrigin(req)) { res.status(403).json({ error: "Invalid origin." }); return; }
+    const { tokenName, tokenSymbol, description } = req.body;
+    if (!tokenName) { res.status(400).json({ error: "tokenName required." }); return; }
+    try {
+      const prompt = buildImagePrompt(String(tokenName), String(tokenSymbol || ""), String(description || ""));
+      const imageUrl = await generateTokenImage(prompt);
+      res.json({ imageUrl });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      res.status(500).json({ error: msg });
+    }
+  });
+
+  /** Proxy Pump.fun trending coins. */
+  app.get("/api/dashboard/trending", async (_req, res) => {
+    try {
+      const pfRes = await fetch(
+        "https://frontend-api-v3.pump.fun/coins/currently-live?limit=10&offset=0&includeNsfw=false",
+      );
+      const data = await pfRes.json();
+      res.json(data);
+    } catch (err) {
+      res.status(502).json({ error: "Pump.fun fetch failed" });
+    }
+  });
+
+  app.post("/api/dashboard/create-session", async (req, res) => {
+    if (!isValidOrigin(req)) {
+      res.status(403).json({ error: "Invalid origin." });
+      return;
+    }
+
+    const { tokenName, tokenSymbol, description, imageUrl, initialBuySol } = req.body;
+    if (!tokenName || !tokenSymbol) {
+      res.status(400).json({ error: "tokenName and tokenSymbol are required." });
+      return;
+    }
+
+    const mintKeypair = Keypair.generate();
+    const mintPublicKey = mintKeypair.publicKey.toBase58();
+    const mintKeypairSecret = Buffer.from(mintKeypair.secretKey).toString("base64");
+    const csrfToken = randomBytes(32).toString("hex");
+    const id = randomUUID();
+
+    const session: ScoutSession = {
+      id,
+      type: "scout",
+      phase: "preview",
+      tokenName: String(tokenName),
+      tokenSymbol: String(tokenSymbol),
+      description: String(description || ""),
+      imageUrl: imageUrl ? String(imageUrl) : null,
+      imagePrompt: "",
+      claimersArray: [],
+      basisPointsArray: [],
+      slippage: 10,
+      priorityFee: 0.0005,
+      meta: {},
+      rpcUrl: rpcUrl,
+      wallet: null,
+      mintPublicKey,
+      mintKeypairSecret,
+      metadataUri: null,
+      csrfToken,
+      initialBuySol: Number(initialBuySol) || 0,
+      signatures: [],
+      createdAt: Date.now(),
+    };
+
+    await setSession(id, session);
+    res.json({ sessionId: id, csrfToken, mintPublicKey });
+  });
 }
 
 /**

@@ -36,7 +36,21 @@ export async function uploadToIpfs(params: {
   telegram?: string;
   website?: string;
 }): Promise<string> {
-  const { blob, filename } = await downloadImage(params.imageUrl);
+  let blob: Blob;
+  let filename: string;
+  if (params.imageUrl) {
+    const img = await downloadImage(params.imageUrl);
+    blob = img.blob;
+    filename = img.filename;
+  } else {
+    /* No image — create a 1x1 transparent PNG placeholder so Pump.fun accepts the upload. */
+    const TRANSPARENT_PNG = Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVQI12NgAAIABQABNjN9GQAAAABJRElFTkSuQmCC",
+      "base64",
+    );
+    blob = new Blob([TRANSPARENT_PNG], { type: "image/png" });
+    filename = "token-image.png";
+  }
 
   const form = new FormData();
   form.append("file", blob, filename);

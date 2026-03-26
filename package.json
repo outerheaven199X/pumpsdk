@@ -8,7 +8,7 @@
     "pumpsdk": "dist/src/index.js"
   },
   "scripts": {
-    "build": "tsc && node -e \"const{cpSync,mkdirSync}=require('fs');mkdirSync('dist/src/signing',{recursive:true});cpSync('src/signing/page.html','dist/src/signing/page.html');cpSync('src/signing/scout-page.html','dist/src/signing/scout-page.html');cpSync('node_modules/@solana/web3.js/lib/index.iife.min.js','dist/src/signing/solana-web3.js')\"",
+    "build": "tsc && node -e \"const{cpSync,mkdirSync}=require('fs');mkdirSync('dist/src/signing',{recursive:true});cpSync('src/signing/page.html','dist/src/signing/page.html');cpSync('src/signing/scout-page.html','dist/src/signing/scout-page.html');cpSync('src/signing/dashboard.html','dist/src/signing/dashboard.html');cpSync('node_modules/@solana/web3.js/lib/index.iife.min.js','dist/src/signing/solana-web3.js')\"",
     "start": "node dist/src/index.js",
     "lint": "eslint src/",
     "lint:fix": "eslint src/ --fix",
@@ -20,7 +20,9 @@
     "@modelcontextprotocol/sdk": "^1.12.1",
     "@pump-fun/pump-sdk": "^1.31.0",
     "@solana/web3.js": "^1.98.4",
+    "dotenv": "^17.3.1",
     "express": "^5.1.0",
+    "grammy": "^1.41.1",
     "zod": "^3.25.7"
   },
   "devDependencies": {
