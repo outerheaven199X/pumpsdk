@@ -8,8 +8,9 @@
     "pumpsdk": "dist/src/index.js"
   },
   "scripts": {
-    "build": "tsc && node -e \"const{cpSync,mkdirSync}=require('fs');mkdirSync('dist/src/signing',{recursive:true});cpSync('src/signing/page.html','dist/src/signing/page.html');cpSync('src/signing/scout-page.html','dist/src/signing/scout-page.html');cpSync('src/signing/dashboard.html','dist/src/signing/dashboard.html');cpSync('node_modules/@solana/web3.js/lib/index.iife.min.js','dist/src/signing/solana-web3.js')\"",
+    "build": "tsc && node -e \"const{cpSync,mkdirSync}=require('fs');mkdirSync('dist/src/signing/fonts',{recursive:true});cpSync('src/signing/page.html','dist/src/signing/page.html');cpSync('src/signing/scout-page.html','dist/src/signing/scout-page.html');cpSync('src/signing/dashboard.html','dist/src/signing/dashboard.html');cpSync('node_modules/@solana/web3.js/lib/index.iife.min.js','dist/src/signing/solana-web3.js');cpSync('src/signing/fonts','dist/src/signing/fonts',{recursive:true})\"",
     "start": "node dist/src/index.js",
+    "bot": "npx tsx --env-file=.env src/telegram/bot.ts",
     "lint": "eslint src/",
     "lint:fix": "eslint src/ --fix",
     "format": "prettier --write src/",
@@ -22,12 +23,16 @@
     "@solana/web3.js": "^1.98.4",
     "dotenv": "^17.3.1",
     "express": "^5.1.0",
+    "express-rate-limit": "^8.3.1",
     "grammy": "^1.41.1",
+    "helmet": "^8.1.0",
+    "ws": "^8.20.0",
     "zod": "^3.25.7"
   },
   "devDependencies": {
     "@types/express": "^5.0.2",
     "@types/node": "^22.15.17",
+    "@types/ws": "^8.18.1",
     "@typescript-eslint/eslint-plugin": "^8.57.2",
     "@typescript-eslint/parser": "^8.57.2",
     "eslint": "^10.1.0",

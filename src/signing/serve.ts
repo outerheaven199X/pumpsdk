@@ -7,11 +7,14 @@ import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Keypair } from "@solana/web3.js";
 
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
+
 import { buildFeeConfigTxs, buildLaunchTx, buildDevBuyTx } from "./launch-builder.js";
 import { getSession, setSession, pruneAll } from "./session-store.js";
 import { generateTokenImage, buildImagePrompt } from "../client/imagegen.js";
 import { uploadToIpfs } from "../client/ipfs.js";
-import { SIGNING_PORT, WALLET_PLACEHOLDER, ALLOWED_ORIGIN, CSRF_TOKEN_BYTES } from "../utils/constants.js";
+import { SIGNING_PORT, WALLET_PLACEHOLDER, ALLOWED_ORIGIN, CSRF_TOKEN_BYTES, SESSION_TTL_MS } from "../utils/constants.js";
 
 const keypairStore = new Map<string, Uint8Array>();
 
@@ -154,7 +157,7 @@ function registerRoutes(app: express.Express, pages: { page: string; scoutPage: 
  */
 function registerDashboardRoutes(app: express.Express, dashboardHtml: string): void {
   const rpcUrl = process.env.SOLANA_RPC_URL || "https://api.mainnet-beta.solana.com";
-  const renderedHtml = dashboardHtml.replace("%%RPC_URL%%", rpcUrl);
+  const renderedHtml = dashboardHtml.replaceAll("%%RPC_URL%%", rpcUrl);
 
   app.get("/dashboard", (_req, res) => {
     res.type("html").send(renderedHtml);
@@ -478,6 +481,134 @@ function registerLaunchRoutes(app: express.Express, pageHtml: string): void {
   });
 }
 
+/** Whitelisted Solana RPC methods safe for browser-side calls. */
+const ALLOWED_RPC_METHODS = [
+  "getBalance",
+  "getTokenAccountsByOwner",
+  "getTransaction",
+  "getSignaturesForAddress",
+  "sendTransaction",
+  "confirmTransaction",
+  "getLatestBlockhash",
+  "getRecentBlockhash",
+] as const;
+
+/** Session cleanup interval in milliseconds (5 minutes). */
+const SESSION_CLEANUP_INTERVAL_MS = 5 * 60 * 1000;
+
+/**
+ * Register proxy routes for RPC and news endpoints.
+ * Keeps API keys and RPC URLs server-side, exposes only whitelisted methods.
+ * @param app - Express app instance.
+ */
+function registerProxyRoutes(app: express.Express): void {
+  const rpcUrl = process.env.SOLANA_RPC_URL || "https://api.mainnet-beta.solana.com";
+
+  app.post("/api/rpc", express.json(), async (req, res) => {
+    const { method, params } = req.body;
+    if (!ALLOWED_RPC_METHODS.includes(method)) {
+      res.status(403).json({ error: "Method not allowed" });
+      return;
+    }
+    try {
+      const rpcRes = await fetch(rpcUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
+      });
+      res.json(await rpcRes.json());
+    } catch {
+      res.status(502).json({ error: "RPC call failed" });
+    }
+  });
+
+  app.get("/api/news", async (_req, res) => {
+    try {
+      const r = await fetch("https://api.coingecko.com/api/v3/news?page=1");
+      const data = await r.json();
+      res.json(data);
+    } catch {
+      res.status(502).json({ data: [] });
+    }
+  });
+
+  app.get("/api/proxy/trending", async (_req, res) => {
+    try {
+      const r = await fetch("https://frontend-api-v3.pump.fun/coins/currently-live?limit=30&offset=0&includeNsfw=false");
+      res.json(await r.json());
+    } catch {
+      res.status(502).json([]);
+    }
+  });
+
+  app.get("/api/proxy/coingecko", async (req, res) => {
+    try {
+      const qs = new URLSearchParams(req.query as Record<string, string>).toString();
+      const r = await fetch(`https://api.coingecko.com/api/v3/simple/price?${qs}`);
+      res.json(await r.json());
+    } catch {
+      res.status(502).json({ error: "CoinGecko fetch failed" });
+    }
+  });
+
+  app.get("/api/proxy/token/:mint", async (req, res) => {
+    try {
+      const mintParam = req.params.mint.replace(/[^A-Za-z0-9]/g, "");
+      const r = await fetch(`https://frontend-api-v3.pump.fun/coins/${mintParam}`);
+      if (r.ok) {
+        res.json(await r.json());
+      } else {
+        res.status(r.status).json({ error: "Not found" });
+      }
+    } catch {
+      res.status(502).json({ error: "Fetch failed" });
+    }
+  });
+
+  app.get("/api/proxy/wallet-history/:wallet", async (req, res) => {
+    const wallet = req.params.wallet.replace(/[^A-Za-z0-9]/g, "");
+    const heliusKey = (process.env.SOLANA_RPC_URL || "").match(/api-key=([^&]+)/)?.[1];
+    if (!heliusKey) {
+      res.status(500).json({ error: "No Helius API key configured" });
+      return;
+    }
+    try {
+      const r = await fetch(
+        `https://api.helius.xyz/v0/addresses/${wallet}/transactions?api-key=${heliusKey}&type=SWAP&limit=50`,
+      );
+      if (r.ok) {
+        res.json(await r.json());
+      } else {
+        res.status(r.status).json({ error: "Helius error" });
+      }
+    } catch {
+      res.status(502).json([]);
+    }
+  });
+}
+
+/**
+ * Start a recurring session cleanup interval.
+ * Overwrites keypair material before deleting expired sessions.
+ */
+function startSessionCleanup(): void {
+  setInterval(async () => {
+    try {
+      for (const [id] of keypairStore) {
+        const session = await getSession<Session>(id);
+        if (!session || Date.now() - session.createdAt > SESSION_TTL_MS) {
+          const secret = keypairStore.get(id);
+          if (secret) secret.fill(0);
+          keypairStore.delete(id);
+        }
+      }
+      await pruneAll();
+    } catch {
+      /* cleanup is best-effort */
+    }
+  }, SESSION_CLEANUP_INTERVAL_MS);
+}
+
 /**
  * Start the signing server (idempotent — only starts once).
  * Binds to 127.0.0.1 only for security.
@@ -488,9 +619,19 @@ export function startSigningServer(): void {
 
   const pages = loadPages();
   const app = express();
+
+  app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false, hsts: false }));
+  app.use(rateLimit({ windowMs: 60_000, max: 120, message: { error: "Rate limit exceeded" } }));
+  app.use("/api/scout", rateLimit({ windowMs: 60_000, max: 30 }));
+  app.use("/api/rpc", rateLimit({ windowMs: 60_000, max: 120 }));
+
   app.use(express.json());
   app.use("/static", express.static(resolve(dirname(fileURLToPath(import.meta.url)), ".")));
+  app.use("/fonts", express.static(resolve(dirname(fileURLToPath(import.meta.url)), "fonts")));
+  registerProxyRoutes(app);
   registerRoutes(app, pages);
+
+  startSessionCleanup();
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
