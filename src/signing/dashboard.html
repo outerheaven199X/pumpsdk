@@ -1135,6 +1135,35 @@
       .mini-widgets { grid-template-columns: 1fr; }
       .legal-footer { left: 0; right: 0; }
     }
+
+    /* ===== ONBOARDING TOUR ===== */
+    .tour-overlay { position: fixed; inset: 0; z-index: 500; background: rgba(0,0,0,0.6); opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+    .tour-overlay.active { opacity: 1; pointer-events: auto; }
+    .tour-spotlight { position: absolute; border: 2px solid #ffffff; box-shadow: 0 0 0 9999px rgba(0,0,0,0.6); transition: all 0.4s cubic-bezier(0.16,1,0.3,1); z-index: 501; }
+    .tour-tooltip { position: absolute; background: #ffffff; color: #0a0a0a; padding: 20px 24px; max-width: 340px; z-index: 502; border: 1px solid rgba(0,0,0,0.08); box-shadow: 0 8px 32px rgba(0,0,0,0.12); transition: all 0.3s cubic-bezier(0.16,1,0.3,1); }
+    .tour-step-counter { font-family: var(--font-label); font-size: 10px; color: #999; letter-spacing: 0.1em; margin-bottom: 6px; }
+    .tour-title { font-family: var(--font-display); font-size: 18px; margin-bottom: 6px; letter-spacing: 0.03em; }
+    .tour-desc { font-family: var(--font-data); font-size: 13px; color: #555; line-height: 1.6; margin-bottom: 16px; }
+    .tour-actions { display: flex; justify-content: space-between; align-items: center; }
+    .tour-skip { font-family: var(--font-label); font-size: 11px; letter-spacing: 0.06em; color: #999; background: none; border: none; cursor: pointer; }
+    .tour-skip:hover { color: #333; }
+    .tour-next { font-family: var(--font-label); font-size: 12px; letter-spacing: 0.06em; padding: 8px 20px; background: #0a0a0a; color: #ffffff; border: none; cursor: pointer; }
+    .tour-next:hover { background: #333; }
+
+    /* ===== AGENT THINKING DOTS ===== */
+    .agent-thinking { display: flex; gap: 4px; padding: 8px 0; }
+    .agent-thinking-dot { width: 5px; height: 5px; border-radius: 50% !important; background: var(--ink-4); animation: think-bounce 1.2s ease-in-out infinite; }
+    .agent-thinking-dot:nth-child(2) { animation-delay: 0.15s; }
+    .agent-thinking-dot:nth-child(3) { animation-delay: 0.3s; }
+    @keyframes think-bounce { 0%, 80%, 100% { opacity: 0.2; transform: scale(0.8); } 40% { opacity: 1; transform: scale(1); } }
+
+    /* ===== GLOBAL CURSOR + ACTIVE FEEDBACK ===== */
+    button, a, [onclick], [data-view], [data-goto], .mini-row, .market-table tbody tr, .watchlist-btn, .buy-btn, .card-btn, .sidebar-item, .period-pill, .sniper-dec, .sniper-inc, .tour-skip, .tour-next, .burn-link { cursor: pointer; }
+    button:active, .buy-btn:active, .card-btn:active, .sidebar-item:active { transform: scale(0.97); }
+
+    /* ===== RESPONSIVE AGENT TOGGLE ===== */
+    .agent-toggle { display: none; position: fixed; top: 50%; right: 0; transform: translateY(-50%) rotate(-90deg); transform-origin: right center; font-family: var(--font-label); font-size: 11px; letter-spacing: 0.1em; padding: 6px 16px; background: #0a0a0a; color: #ffffff; border: none; cursor: pointer; z-index: 80; }
+    @media (max-width: 1199px) { .agent-toggle { display: block; } .agent-panel { transform: translateX(100%); transition: transform 0.25s ease; } .agent-panel.open { transform: translateX(0); } .main-area { margin-right: 0 !important; } }
   </style>
 </head>
 <body>
@@ -1250,15 +1279,15 @@
 
         <div class="mini-widgets" style="margin-top:24px">
           <div class="card mini-widget">
-            <div class="card-header"><span><span class="live-dot"></span> FEED</span><span class="view-all" data-goto="market">VIEW ALL &rarr;</span></div>
+            <div class="card-header"><span><span class="live-dot"></span> FEED</span><span class="view-all" data-goto="market">SEE ALL &rarr;</span></div>
             <div class="card-body mini-body" id="mini-feed-body"></div>
           </div>
           <div class="card mini-widget">
-            <div class="card-header">LATEST NEWS<span class="view-all" data-goto="news">VIEW ALL &rarr;</span></div>
+            <div class="card-header">LATEST NEWS<span class="view-all" data-goto="news">SEE ALL &rarr;</span></div>
             <div class="card-body mini-body" id="mini-news-body"></div>
           </div>
           <div class="card mini-widget">
-            <div class="card-header">&#x1F40B; WHALE ACTIVITY<span class="view-all" data-goto="market">VIEW ALL &rarr;</span></div>
+            <div class="card-header">&#x1F40B; WHALE ACTIVITY<span class="view-all" data-goto="market">SEE ALL &rarr;</span></div>
             <div class="card-body mini-body" id="mini-whale-body"></div>
           </div>
         </div>
@@ -1320,8 +1349,8 @@
             <div class="config-row" style="margin-top:12px"><button class="card-btn" onclick="sniperDryRun()">DRY RUN</button></div>
           </div>
           <div class="sniper-feed-wrap">
-            <div class="feed-header"><span class="live-dot"></span><span class="feed-header-title">Sniper Feed</span><span id="sniper-count" style="font-size:11px;color:var(--ink-4)">0 detected</span></div>
-            <div class="feed-scroll" id="sniper-feed-scroll"></div>
+            <div class="feed-header"><span class="live-dot"></span><span class="feed-header-title">Sniper Feed</span><span id="sniper-count" style="font-size:11px;color:var(--ink-4)">Watching... 0 matches yet</span></div>
+            <div class="feed-scroll" id="sniper-feed-scroll"><div class="mini-row" style="text-align:center;padding:24px;color:var(--ink-3);font-size:13px">Tokens matching your filters appear in real-time.</div></div>
           </div>
         </div>
       </div>
@@ -1402,6 +1431,8 @@
           <h3>Settings</h3>
           <div class="form-group"><label class="form-label">RPC Endpoint</label><input class="form-input" id="settings-rpc" value="%%RPC_URL%%" /></div>
           <div class="form-group"><label class="form-label">Connected Wallet</label><input class="form-input" id="settings-wallet" disabled /></div>
+          <div class="sniper-row"><span class="sniper-label">ONBOARDING TOUR</span><button class="card-btn" onclick="localStorage.removeItem('pf_tour_done'); showToast('Tour reset. Reload to replay.');">REPLAY TOUR</button></div>
+          <div class="sniper-row"><span class="sniper-label">LLM API KEY</span><button class="card-btn" onclick="localStorage.removeItem('pumpfolio_llm_key'); showToast('API key removed.');">REMOVE KEY</button></div>
         </div>
       </div>
 
@@ -1753,6 +1784,15 @@
           totalEl.textContent = "$" + totalUsd.toFixed(2);
         }
         document.getElementById("ps-tokens").textContent = String(tokenCount);
+        if (tokenCount === 0) {
+          var emptyRow = document.createElement("tr");
+          var emptyTd = document.createElement("td");
+          emptyTd.colSpan = 6;
+          emptyTd.style.cssText = 'text-align:center;padding:24px;color:var(--ink-3);font-family:var(--font-data);font-size:13px';
+          emptyTd.textContent = 'Your Pump.fun tokens will appear here. Buy from the Market or use the Sniper to get started.';
+          emptyRow.appendChild(emptyTd);
+          grid.appendChild(emptyRow);
+        }
 
         fetchTrending();
       } catch (e) {
@@ -2053,6 +2093,20 @@
       if (feedWs && feedWs.readyState === WebSocket.OPEN) return;
       try {
         feedWs = new WebSocket("wss://pumpportal.fun/api/data");
+        var wsTimeout = setTimeout(function() {
+          var feedBody = document.getElementById('market-feed-body');
+          if (feedBody && feedBody.children.length <= 1) {
+            feedBody.innerHTML = '';
+            var td = document.createElement('td'); td.colSpan = 7;
+            td.style.cssText = 'text-align:center;padding:24px;color:var(--ink-3);font-family:var(--font-data);font-size:13px';
+            td.textContent = 'Connection slow. ';
+            var retryBtn = document.createElement('button'); retryBtn.className = 'card-btn'; retryBtn.textContent = 'RETRY'; retryBtn.style.marginLeft = '8px';
+            retryBtn.onclick = function() { connectFeed(); };
+            td.appendChild(retryBtn);
+            var tr = document.createElement('tr'); tr.appendChild(td);
+            feedBody.appendChild(tr);
+          }
+        }, 10000);
         feedWs.onopen = function() {
           console.log('📡 PumpPortal WS connected');
           feedWs.send(JSON.stringify({ method: "subscribeNewToken" }));
@@ -2068,6 +2122,7 @@
           }, 2000);
         };
         feedWs.onmessage = function(evt) {
+          clearTimeout(wsTimeout);
           try {
             var d = JSON.parse(evt.data);
             if (!d.mint || !d.name) return;
@@ -2890,7 +2945,7 @@
       var tokens = feedBuffer.slice(0, 50);
       if (filter === 'grad') tokens = feedBuffer.filter(function(t) { return t.curveProgress >= 100; }).slice(0, 50);
       if (filter === 'new') tokens = feedBuffer.filter(function(t) { return t.curveProgress < 100; }).slice(0, 50);
-      if (tokens.length === 0) { var tr = document.createElement('tr'); var td = document.createElement('td'); td.colSpan = 6; td.style.cssText = 'text-align:center;padding:20px;color:var(--ink-4)'; td.textContent = 'Connecting to PumpPortal...'; tr.appendChild(td); tbody.appendChild(tr); return; }
+      if (tokens.length === 0) { var tr = document.createElement('tr'); var td = document.createElement('td'); td.colSpan = 6; td.style.cssText = 'text-align:center;padding:20px;color:var(--ink-4)'; td.textContent = 'Connecting to live feed...'; tr.appendChild(td); tbody.appendChild(tr); return; }
       tokens.forEach(function(t) {
         var tr = document.createElement('tr');
         var tdAge = createEl('td', 'feed-time', timeAgo(t.timestamp || t.bufferedAt)); tdAge.style.cssText = 'color:var(--ink-4);font-size:11px';
@@ -2898,7 +2953,7 @@
         var mcapUsd = t.marketCapUsd || ((t.marketCapSol || 0) * (cachedSolPrice || 0)); var tdMcap = createEl('td', '', mcapUsd > 0 ? fmtUsd(mcapUsd) : '—');
         var tdCurve = document.createElement('td'); if (t.curveProgress >= 100) { var badge = createEl('span', 'badge-grad', 'GRAD'); tdCurve.appendChild(badge); } else if (t.curveProgress > 0) { tdCurve.textContent = t.curveProgress.toFixed(0) + '%'; tdCurve.style.color = t.curveProgress > 70 ? 'var(--grad)' : 'var(--ink-3)'; } else { tdCurve.textContent = '—'; tdCurve.style.color = 'var(--ink-4)'; }
         var tdSol = createEl('td', '', t.solInCurve > 0 ? fmtSol(t.solInCurve) : '—'); tdSol.style.cssText = 'color:var(--ink-3);font-size:12px';
-        var tdAction = document.createElement('td'); var btn = document.createElement('button'); btn.className = 'buy-btn'; btn.textContent = '0.01'; btn.dataset.mint = t.mint; tdAction.appendChild(btn);
+        var tdAction = document.createElement('td'); var btn = document.createElement('button'); btn.className = 'buy-btn'; btn.textContent = 'BUY 0.01'; btn.dataset.mint = t.mint; tdAction.appendChild(btn);
         var tdWatch = document.createElement('td'); tdWatch.appendChild(createWatchlistBtn(t.mint));
         tr.addEventListener('click', function(ev) { if (ev.target.closest('button') || ev.target.closest('a')) return; openTokenPopup(t.mint); });
         tr.title = 'Click to view details';
@@ -2937,13 +2992,13 @@
       if (!tbody) return;
       tbody.innerHTML = '';
       var seen = {}; var candidates = feedBuffer.filter(function(t) { if (!t.curveProgress || t.curveProgress < 60 || t.curveProgress >= 100) return false; if (seen[t.mint]) return false; seen[t.mint] = true; return true; }).sort(function(a,b) { return b.curveProgress - a.curveProgress; }).slice(0, 20);
-      if (candidates.length === 0) { var tr = document.createElement('tr'); var td = document.createElement('td'); td.colSpan = 4; td.style.cssText = 'text-align:center;padding:16px;color:var(--ink-4)'; td.textContent = 'Collecting data... candidates appear after ~10 min of streaming.'; tr.appendChild(td); tbody.appendChild(tr); return; }
+      if (candidates.length === 0) { var tr = document.createElement('tr'); var td = document.createElement('td'); td.colSpan = 4; td.style.cssText = 'text-align:center;padding:16px;color:var(--ink-4)'; td.textContent = 'Loading graduation candidates...'; tr.appendChild(td); tbody.appendChild(tr); return; }
       candidates.forEach(function(t) {
         var tr = document.createElement('tr');
         var tdName = document.createElement('td'); var n = createEl('span', '', sanitizeText(t.name)); n.style.fontWeight = '600'; var tk = createEl('span', '', ' $' + sanitizeText(t.symbol)); tk.style.cssText = 'color:var(--ink-3);font-size:11px;margin-left:6px'; tdName.append(n, tk);
         var tdPct = createEl('td', '', t.curveProgress.toFixed(0) + '%'); tdPct.style.cssText = 'font-weight:600;color:' + (t.curveProgress >= 80 ? 'var(--grad)' : 'var(--ink-2)');
         var solLeft = Math.max(0, 85 - (t.solInCurve || 0)); var tdLeft = createEl('td', '', fmtSol(solLeft) + ' SOL left'); tdLeft.style.cssText = 'color:var(--ink-3);font-size:12px';
-        var tdBtn = document.createElement('td'); var btn = document.createElement('button'); btn.className = 'buy-btn'; btn.textContent = '0.05'; btn.dataset.mint = t.mint; tdBtn.appendChild(btn);
+        var tdBtn = document.createElement('td'); var btn = document.createElement('button'); btn.className = 'buy-btn'; btn.textContent = 'BUY 0.05'; btn.dataset.mint = t.mint; tdBtn.appendChild(btn);
         tr.append(tdName, tdPct, tdLeft, tdBtn);
         tbody.appendChild(tr);
       });
@@ -2984,7 +3039,7 @@
 
     function renderMiniWhales() {
       var c = document.getElementById('mini-whale-body'); if (!c) return; c.innerHTML = '';
-      if (whaleBuffer.length === 0) { c.appendChild(createEl('div', 'mini-row', 'Watching for large trades...')); return; }
+      if (whaleBuffer.length === 0) { c.appendChild(createEl('div', 'mini-row', 'Tracking large trades on trending tokens...')); return; }
       whaleBuffer.slice(0, 10).forEach(function(w) { var row = createEl('div', 'mini-row', ''); row.append(createEl('span', 'time', timeAgo(w.timestamp)), createEl('span', '', w.type === 'buy' ? '\ud83d\udfe2' : '\ud83d\udd34'), createEl('span', 'name', sanitizeText(w.token)), createEl('span', 'value', fmtSol(w.amount) + ' SOL')); c.appendChild(row); });
     }
 
@@ -3148,7 +3203,7 @@
       var mintRow = createEl('div', '', 'CA: ' + mint); mintRow.style.cssText = 'margin-bottom:16px;font-family:var(--font-data);font-size:12px;color:var(--ink-3);cursor:pointer'; mintRow.dataset.copy = mint; mintRow.title = 'Click to copy';
       var actions = document.createElement('div'); actions.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px';
       var amts = ['0.01', '0.05', '0.1', '0.5'];
-      for (var ai = 0; ai < amts.length; ai++) { var btn = document.createElement('button'); btn.className = 'buy-btn'; btn.textContent = amts[ai] + ' SOL'; btn.dataset.mint = mint; btn.dataset.amount = amts[ai]; actions.appendChild(btn); }
+      for (var ai = 0; ai < amts.length; ai++) { var btn = document.createElement('button'); btn.className = 'buy-btn'; btn.textContent = 'BUY ' + amts[ai] + ' SOL'; btn.dataset.mint = mint; btn.dataset.amount = amts[ai]; actions.appendChild(btn); }
       actions.appendChild(createWatchlistBtn(mint));
       var burnLink = document.createElement('a'); burnLink.href = 'https://sol-incinerator.com/#/spl/' + mint; burnLink.target = '_blank'; burnLink.rel = 'noopener noreferrer'; burnLink.className = 'burn-link'; burnLink.textContent = '\ud83d\udd25 BURN'; actions.appendChild(burnLink);
       var links = document.createElement('div'); links.style.cssText = 'display:flex;gap:16px;font-family:var(--font-label);font-size:11px';
@@ -3238,6 +3293,118 @@
       return { score: Math.max(0, score), flags: flags };
     }
 
+    /* ===== V3.4: BUNDLE DETECTOR ===== */
+    /** Detect if a token's early trading patterns suggest bundled launches. */
+    async function detectBundle(mint) {
+      try {
+        var r = await fetch('/api/proxy/token/' + mint);
+        if (!r.ok) return { bundled: false, confidence: 'unknown', detail: 'Could not fetch token data' };
+        var data = await r.json();
+
+        var flags = [];
+        var score = 0;
+        var FAST_PUMP_MINUTES = 5;
+        var FAST_PUMP_MCAP = 30000;
+        var LOW_HOLDER_THRESHOLD = 10;
+        var LOW_HOLDER_MCAP = 10000;
+        var NO_SOCIALS_MCAP = 20000;
+        var HIGH_RESERVE_RATIO = 0.5;
+
+        var ageMs = data.created_timestamp ? (Date.now() - data.created_timestamp * 1000) : 0;
+        var ageMin = ageMs / 60000;
+        if (ageMin > 0 && ageMin < FAST_PUMP_MINUTES && (data.usd_market_cap || 0) > FAST_PUMP_MCAP) {
+          flags.push('\u{1F6A9} $' + fmtUsd(data.usd_market_cap) + ' mcap in ' + ageMin.toFixed(0) + ' min');
+          score += 40;
+        }
+
+        var holders = data.holder_count || 0;
+        var mcap = data.usd_market_cap || 0;
+        if (mcap > LOW_HOLDER_MCAP && holders < LOW_HOLDER_THRESHOLD) {
+          flags.push('\u{1F6A9} Only ' + holders + ' holders at $' + fmtUsd(mcap) + ' mcap');
+          score += 30;
+        }
+
+        if (!data.twitter && !data.telegram && !data.website && mcap > NO_SOCIALS_MCAP) {
+          flags.push('\u26A0\uFE0F No socials with high mcap');
+          score += 20;
+        }
+
+        if (data.virtual_sol_reserves && data.real_sol_reserves) {
+          var realVsVirtual = data.real_sol_reserves / data.virtual_sol_reserves;
+          if (realVsVirtual > HIGH_RESERVE_RATIO) {
+            flags.push('\u26A0\uFE0F Unusual reserve ratio: ' + (realVsVirtual * 100).toFixed(0) + '%');
+            score += 15;
+          }
+        }
+
+        var confidence = score >= 60 ? 'HIGH' : score >= 30 ? 'MEDIUM' : 'LOW';
+        var bundled = score >= 40;
+
+        if (flags.length === 0) flags.push('\u2705 No bundle indicators detected');
+
+        return { bundled: bundled, confidence: confidence, score: score, flags: flags };
+      } catch(e) {
+        return { bundled: false, confidence: 'unknown', detail: 'Analysis failed: ' + e.message };
+      }
+    }
+
+    /* ===== V3.4: CREATOR SCORE ===== */
+    /** Score a creator wallet based on transaction history, age, and diversity. */
+    async function getCreatorScore(creatorWallet) {
+      if (!creatorWallet) return { score: 0, label: 'UNKNOWN', detail: 'No creator wallet found', history: [] };
+      try {
+        var r = await fetch('/api/proxy/wallet-history/' + creatorWallet);
+        if (!r.ok) return { score: 50, label: 'UNVERIFIED', detail: 'Could not fetch wallet history', history: [] };
+        var txs = await r.json();
+        if (!Array.isArray(txs)) return { score: 50, label: 'UNVERIFIED', detail: 'Invalid response', history: [] };
+
+        var BASELINE = 50;
+        var score = BASELINE;
+        var flags = [];
+        var ACTIVE_TX_THRESHOLD = 20;
+        var MODERATE_TX_THRESHOLD = 5;
+        var DIVERSE_MINT_THRESHOLD = 10;
+        var SINGLE_MINT_THRESHOLD = 2;
+        var OLD_WALLET_DAYS = 30;
+
+        if (txs.length >= ACTIVE_TX_THRESHOLD) { score += 15; flags.push('\u2705 Active wallet (' + txs.length + '+ transactions)'); }
+        else if (txs.length >= MODERATE_TX_THRESHOLD) { score += 5; flags.push('\u26A0\uFE0F Moderate activity (' + txs.length + ' transactions)'); }
+        else { score -= 15; flags.push('\u{1F6A9} New wallet (' + txs.length + ' transactions)'); }
+
+        var uniqueMints = {};
+        for (var i = 0; i < txs.length; i++) {
+          if (txs[i].tokenTransfers) {
+            for (var j = 0; j < txs[i].tokenTransfers.length; j++) {
+              uniqueMints[txs[i].tokenTransfers[j].mint] = true;
+            }
+          }
+        }
+        var mintCount = Object.keys(uniqueMints).length;
+        if (mintCount >= DIVERSE_MINT_THRESHOLD) { score += 10; flags.push('\u2705 Diverse trader (' + mintCount + ' tokens)'); }
+        else if (mintCount <= SINGLE_MINT_THRESHOLD) { score -= 10; flags.push('\u{1F6A9} Single-token wallet'); }
+
+        if (txs.length > 0) {
+          var oldest = txs[txs.length - 1];
+          if (oldest.timestamp) {
+            var walletAge = (Date.now() / 1000 - oldest.timestamp) / 86400;
+            if (walletAge >= OLD_WALLET_DAYS) { score += 10; flags.push('\u2705 Wallet age: ' + Math.floor(walletAge) + ' days'); }
+            else if (walletAge < 1) { score -= 20; flags.push('\u{1F6A9} Wallet created today'); }
+          }
+        }
+
+        var MAX_SCORE = 100;
+        var MIN_SCORE = 0;
+        var TRUSTED_THRESHOLD = 70;
+        var NEUTRAL_THRESHOLD = 40;
+        score = Math.max(MIN_SCORE, Math.min(MAX_SCORE, score));
+        var label = score >= TRUSTED_THRESHOLD ? 'TRUSTED' : score >= NEUTRAL_THRESHOLD ? 'NEUTRAL' : 'RISKY';
+
+        return { score: score, label: label, flags: flags, history: txs.slice(0, 5) };
+      } catch(e) {
+        return { score: 50, label: 'UNVERIFIED', detail: 'Error: ' + e.message, history: [] };
+      }
+    }
+
     /* ===== V3.4: TOKEN ANALYSIS (KILLER 1) ===== */
     /** Run AI analysis on a token for graduation probability. */
     async function runTokenAnalysis(mint) {
@@ -3320,6 +3487,46 @@
       safetyDiv.appendChild(flags);
       body.appendChild(safetyDiv);
 
+      /* Bundle detector section */
+      var bundleDiv = document.createElement('div'); bundleDiv.className = 'popup-safety'; bundleDiv.style.marginTop = '8px';
+      var bundleHeader = document.createElement('div'); bundleHeader.className = 'safety-header';
+      bundleHeader.appendChild(createEl('span', 'safety-label', 'BUNDLE DETECTOR'));
+      var bundleLoading = createEl('span', '', '\u23F3 Analyzing...'); bundleLoading.style.cssText = 'font-family:var(--font-data);font-size:13px;color:var(--ink-4)';
+      bundleHeader.appendChild(bundleLoading);
+      bundleDiv.appendChild(bundleHeader);
+      var bundleFlags = document.createElement('div'); bundleFlags.className = 'safety-flags'; bundleFlags.id = 'popup-bundle-flags';
+      bundleDiv.appendChild(bundleFlags);
+      body.appendChild(bundleDiv);
+
+      /* Creator score section */
+      var creatorDiv = document.createElement('div'); creatorDiv.className = 'popup-safety'; creatorDiv.style.marginTop = '8px';
+      var creatorHeader = document.createElement('div'); creatorHeader.className = 'safety-header';
+      creatorHeader.appendChild(createEl('span', 'safety-label', 'CREATOR SCORE'));
+      var creatorLoading = createEl('span', '', '\u23F3 Looking up...'); creatorLoading.style.cssText = 'font-family:var(--font-data);font-size:13px;color:var(--ink-4)';
+      creatorHeader.appendChild(creatorLoading);
+      creatorDiv.appendChild(creatorHeader);
+      var creatorFlags = document.createElement('div'); creatorFlags.className = 'safety-flags'; creatorFlags.id = 'popup-creator-flags';
+      creatorDiv.appendChild(creatorFlags);
+      body.appendChild(creatorDiv);
+
+      /* Run bundle detector and creator score async (non-blocking) */
+      detectBundle(mint).then(function(result) {
+        bundleLoading.textContent = result.bundled ? '\u{1F6A9} LIKELY BUNDLED' : '\u2705 NO BUNDLE';
+        bundleLoading.style.color = result.bundled ? 'var(--down)' : 'var(--up)';
+        bundleLoading.style.fontWeight = '700';
+        var flagsEl = document.getElementById('popup-bundle-flags');
+        if (flagsEl) { flagsEl.innerHTML = ''; for (var bi = 0; bi < result.flags.length; bi++) flagsEl.appendChild(createEl('div', '', result.flags[bi])); }
+      }).catch(function() { bundleLoading.textContent = '\u2014 unavailable'; });
+
+      var creatorWallet = data.creator || '';
+      getCreatorScore(creatorWallet).then(function(result) {
+        creatorLoading.textContent = result.score + '/100 \u2014 ' + result.label;
+        creatorLoading.style.color = result.score >= 70 ? 'var(--up)' : result.score >= 40 ? 'var(--grad)' : 'var(--down)';
+        creatorLoading.style.fontWeight = '700';
+        var flagsEl = document.getElementById('popup-creator-flags');
+        if (flagsEl) { flagsEl.innerHTML = ''; for (var ci = 0; ci < result.flags.length; ci++) flagsEl.appendChild(createEl('div', '', result.flags[ci])); }
+      }).catch(function() { creatorLoading.textContent = '\u2014 unavailable'; });
+
       /* Stats grid */
       var stats = document.createElement('div');
       stats.className = 'popup-stats';
@@ -3370,7 +3577,7 @@
       for (var ai = 0; ai < amts.length; ai++) {
         var btn = document.createElement('button');
         btn.className = 'buy-btn';
-        btn.textContent = amts[ai] + ' SOL';
+        btn.textContent = 'BUY ' + amts[ai] + ' SOL';
         btn.dataset.mint = mint;
         btn.dataset.amount = amts[ai];
         actions.appendChild(btn);
@@ -3451,6 +3658,42 @@
       }
     }
     setInterval(updateTitle, 5000);
+
+    /* ===== ONBOARDING TOUR ===== */
+    var TOUR_STEPS = [
+      { target: '.portfolio-header, .holdings-strip', title: 'YOUR PORTFOLIO', desc: 'Your total holdings value, SOL balance, and 24-hour P/L. Click any holding to see details.', position: 'below' },
+      { target: '.sidebar-item[data-view="market"]', title: 'MARKET', desc: 'Live token feed, trending coins, and graduation watch. Click any token for stats and safety score.', position: 'right' },
+      { target: '.sidebar-item[data-view="sniper"]', title: 'SNIPER', desc: 'Set max market cap, buy amount, and filters. Auto-detects new tokens matching your criteria.', position: 'right' },
+      { target: '.agent-panel', title: 'AI AGENT', desc: 'Ask anything about the market. The agent reads live data and gives actionable analysis.', position: 'left' },
+      { target: '.mini-widgets', title: 'DASHBOARD WIDGETS', desc: 'Quick previews of launches, news, and whale activity. Click SEE ALL to dive deeper.', position: 'above' },
+      { target: '.marquee-bar', title: 'LIVE MARKET', desc: 'Top crypto prices scrolling in real time. The entire dashboard auto-refreshes every 30 seconds.', position: 'below' },
+    ];
+    var currentTourStep = 0;
+    function startTour() { if (localStorage.getItem('pf_tour_done')) return; currentTourStep = 0; document.getElementById('tour-overlay').classList.add('active'); showTourStep(0); }
+    function showTourStep(idx) {
+      var step = TOUR_STEPS[idx]; if (!step) { endTour(); return; }
+      var target = document.querySelector(step.target); if (!target) { showTourStep(idx + 1); return; }
+      var rect = target.getBoundingClientRect(); var pad = 8;
+      var spotlight = document.getElementById('tour-spotlight');
+      spotlight.style.top = (rect.top - pad) + 'px'; spotlight.style.left = (rect.left - pad) + 'px';
+      spotlight.style.width = (rect.width + pad * 2) + 'px'; spotlight.style.height = (rect.height + pad * 2) + 'px';
+      var tooltip = document.getElementById('tour-tooltip'); tooltip.style.transform = '';
+      switch (step.position) {
+        case 'below': tooltip.style.top = (rect.bottom + 16) + 'px'; tooltip.style.left = Math.max(16, rect.left) + 'px'; break;
+        case 'above': tooltip.style.top = (rect.top - 16) + 'px'; tooltip.style.left = Math.max(16, rect.left) + 'px'; tooltip.style.transform = 'translateY(-100%)'; break;
+        case 'right': tooltip.style.top = rect.top + 'px'; tooltip.style.left = (rect.right + 16) + 'px'; break;
+        case 'left': tooltip.style.top = rect.top + 'px'; tooltip.style.left = (rect.left - 16) + 'px'; tooltip.style.transform = 'translateX(-100%)'; break;
+      }
+      document.getElementById('tour-counter').textContent = 'STEP ' + (idx + 1) + ' OF ' + TOUR_STEPS.length;
+      document.getElementById('tour-title').textContent = step.title;
+      document.getElementById('tour-desc').textContent = step.desc;
+      document.getElementById('tour-next').textContent = idx === TOUR_STEPS.length - 1 ? 'GET STARTED' : 'NEXT \u2192';
+    }
+    function nextTourStep() { currentTourStep++; if (currentTourStep >= TOUR_STEPS.length) endTour(); else { document.getElementById('tour-tooltip').style.transform = ''; showTourStep(currentTourStep); } }
+    function endTour() { document.getElementById('tour-overlay').classList.remove('active'); localStorage.setItem('pf_tour_done', '1'); }
+    var tourNextBtn = document.getElementById('tour-next'); if (tourNextBtn) tourNextBtn.addEventListener('click', nextTourStep);
+    var tourSkipBtn = document.getElementById('tour-skip'); if (tourSkipBtn) tourSkipBtn.addEventListener('click', endTour);
+    setTimeout(function() { if (!localStorage.getItem('pf_tour_done')) startTour(); }, 2000);
   </script>
 
   <!-- TOKEN POPUP (slide-out panel) -->
@@ -3467,5 +3710,22 @@
     <span class="legal-divider">&middot;</span>
     <span>Not financial advice</span>
   </footer>
+
+  <!-- ONBOARDING TOUR -->
+  <div class="tour-overlay" id="tour-overlay">
+    <div class="tour-spotlight" id="tour-spotlight"></div>
+    <div class="tour-tooltip" id="tour-tooltip">
+      <div class="tour-step-counter" id="tour-counter"></div>
+      <div class="tour-title" id="tour-title"></div>
+      <div class="tour-desc" id="tour-desc"></div>
+      <div class="tour-actions">
+        <button class="tour-skip" id="tour-skip">SKIP TOUR</button>
+        <button class="tour-next" id="tour-next">NEXT &rarr;</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESPONSIVE AGENT TOGGLE -->
+  <button class="agent-toggle" id="agent-toggle" onclick="var ap=document.querySelector('.agent-panel');ap.classList.toggle('open');this.textContent=ap.classList.contains('open')?'CLOSE':'AGENT';">AGENT</button>
 </body>
 </html>
