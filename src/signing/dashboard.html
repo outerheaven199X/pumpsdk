@@ -799,7 +799,7 @@
     .image-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
     /* ===== SNIPER VIEW ===== */
-    .sniper-layout { display: grid; grid-template-columns: 240px 1fr; gap: 0; flex: 1; overflow: hidden; }
+    .sniper-layout { display: grid; grid-template-columns: 320px 1fr; gap: 0; flex: 1; overflow: visible; }
     .sniper-config {
       background: var(--bg-1);
       border-right: 1px solid var(--border);
@@ -1096,17 +1096,19 @@
     .thinking-dot:nth-child(3) { animation-delay: 0.4s; }
 
     /* ===== V3.4: SNIPER INTERACTIVE SETTINGS ===== */
-    .sniper-settings { min-width: 280px; font-family: var(--font-data); font-size: 15px; }
-    .sniper-row { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid var(--border); }
-    .sniper-label { font-family: var(--font-label); font-size: 13px; color: var(--ink-2); letter-spacing: 0.04em; }
-    .sniper-value { font-family: var(--font-data); font-size: 16px; font-weight: 600; color: var(--ink-1); }
-    .sniper-control { display: flex; align-items: center; gap: 8px; }
-    .sniper-dec, .sniper-inc { font-size: 14px; width: 28px; height: 28px; border: 1px solid var(--border); background: none; color: var(--ink-3); cursor: pointer; display: flex; align-items: center; justify-content: center; }
+    .sniper-settings { min-width: 320px; max-width: 400px; font-family: var(--font-data); font-size: 15px; }
+    .sniper-row { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid var(--border); gap: 16px; }
+    .sniper-label { font-family: var(--font-label); font-size: 13px; color: var(--ink-2); letter-spacing: 0.04em; white-space: nowrap; }
+    .sniper-value { font-family: var(--font-data); font-size: 15px; font-weight: 600; color: var(--ink-1); min-width: 80px; text-align: center; overflow: visible; white-space: nowrap; }
+    .sniper-settings .card-body, .sniper-layout .card-body { overflow: visible !important; max-height: none !important; }
+    .sniper-settings .card { overflow: visible; }
+    .sniper-control { display: flex; align-items: center; gap: 8px; flex-shrink: 0; min-width: 180px; justify-content: flex-end; }
+    .sniper-dec, .sniper-inc { font-size: 14px; width: 32px; height: 32px; border: 1px solid var(--border); background: none; color: var(--ink-3); cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
     .sniper-dec:hover, .sniper-inc:hover { background: var(--bg-2); color: var(--ink-1); }
 
     /* ===== V3.4: TOKEN POPUP ===== */
-    .token-popup { position: fixed; top: 0; right: 380px; width: 400px; height: 100vh; background: var(--bg-1); border-left: 1px solid var(--border); transform: translateX(100%); transition: transform 0.25s cubic-bezier(0.16,1,0.3,1); z-index: 85; display: flex; flex-direction: column; overflow: hidden; box-shadow: -4px 0 20px rgba(0,0,0,0.06); }
-    .token-popup.open { transform: translateX(0); }
+    .token-popup { position: fixed; top: 0; right: 0; width: 380px; height: 100vh; background: var(--bg-1); border-left: 1px solid var(--border); transform: translateX(100%); transition: transform 0.25s cubic-bezier(0.16,1,0.3,1); z-index: 95; display: flex; flex-direction: column; overflow: hidden; box-shadow: -4px 0 20px rgba(0,0,0,0.06); visibility: hidden; }
+    .token-popup.open { transform: translateX(0); visibility: visible; }
     .popup-header { background: #0a0a0a; color: #fff; padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
     .popup-title { font-family: var(--font-display); font-size: 20px; letter-spacing: 0.04em; }
     .popup-close { background: none; border: none; color: rgba(255,255,255,0.5); font-size: 18px; cursor: pointer; }
@@ -1140,7 +1142,7 @@
     .tour-overlay { position: fixed; inset: 0; z-index: 500; background: rgba(0,0,0,0.6); opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
     .tour-overlay.active { opacity: 1; pointer-events: auto; }
     .tour-spotlight { position: absolute; border: 2px solid #ffffff; box-shadow: 0 0 0 9999px rgba(0,0,0,0.6); transition: all 0.4s cubic-bezier(0.16,1,0.3,1); z-index: 501; }
-    .tour-tooltip { position: absolute; background: #ffffff; color: #0a0a0a; padding: 20px 24px; max-width: 340px; z-index: 502; border: 1px solid rgba(0,0,0,0.08); box-shadow: 0 8px 32px rgba(0,0,0,0.12); transition: all 0.3s cubic-bezier(0.16,1,0.3,1); }
+    .tour-tooltip { position: fixed; background: #ffffff; color: #0a0a0a; padding: 20px 24px; max-width: 340px; min-width: 280px; z-index: 9999; border: 1px solid rgba(0,0,0,0.08); box-shadow: 0 8px 32px rgba(0,0,0,0.2); }
     .tour-step-counter { font-family: var(--font-label); font-size: 10px; color: #999; letter-spacing: 0.1em; margin-bottom: 6px; }
     .tour-title { font-family: var(--font-display); font-size: 18px; margin-bottom: 6px; letter-spacing: 0.03em; }
     .tour-desc { font-family: var(--font-data); font-size: 13px; color: #555; line-height: 1.6; margin-bottom: 16px; }
@@ -3669,7 +3671,14 @@
       { target: '.marquee-bar', title: 'LIVE MARKET', desc: 'Top crypto prices scrolling in real time. The entire dashboard auto-refreshes every 30 seconds.', position: 'below' },
     ];
     var currentTourStep = 0;
-    function startTour() { if (localStorage.getItem('pf_tour_done')) return; currentTourStep = 0; document.getElementById('tour-overlay').classList.add('active'); showTourStep(0); }
+    function startTour() {
+      if (localStorage.getItem('pf_tour_done')) return;
+      currentTourStep = 0;
+      var nb = document.getElementById('tour-next'); if (nb) nb.onclick = nextTourStep;
+      var sb = document.getElementById('tour-skip'); if (sb) sb.onclick = endTour;
+      document.getElementById('tour-overlay').classList.add('active');
+      showTourStep(0);
+    }
     function showTourStep(idx) {
       var step = TOUR_STEPS[idx]; if (!step) { endTour(); return; }
       var target = document.querySelector(step.target); if (!target) { showTourStep(idx + 1); return; }
@@ -3681,7 +3690,7 @@
       switch (step.position) {
         case 'below': tooltip.style.top = (rect.bottom + 16) + 'px'; tooltip.style.left = Math.max(16, rect.left) + 'px'; break;
         case 'above': tooltip.style.top = (rect.top - 16) + 'px'; tooltip.style.left = Math.max(16, rect.left) + 'px'; tooltip.style.transform = 'translateY(-100%)'; break;
-        case 'right': tooltip.style.top = rect.top + 'px'; tooltip.style.left = (rect.right + 16) + 'px'; break;
+        case 'right': tooltip.style.top = rect.top + 'px'; tooltip.style.left = Math.max(160, rect.right + 16) + 'px'; break;
         case 'left': tooltip.style.top = rect.top + 'px'; tooltip.style.left = (rect.left - 16) + 'px'; tooltip.style.transform = 'translateX(-100%)'; break;
       }
       document.getElementById('tour-counter').textContent = 'STEP ' + (idx + 1) + ' OF ' + TOUR_STEPS.length;
@@ -3691,8 +3700,7 @@
     }
     function nextTourStep() { currentTourStep++; if (currentTourStep >= TOUR_STEPS.length) endTour(); else { document.getElementById('tour-tooltip').style.transform = ''; showTourStep(currentTourStep); } }
     function endTour() { document.getElementById('tour-overlay').classList.remove('active'); localStorage.setItem('pf_tour_done', '1'); }
-    var tourNextBtn = document.getElementById('tour-next'); if (tourNextBtn) tourNextBtn.addEventListener('click', nextTourStep);
-    var tourSkipBtn = document.getElementById('tour-skip'); if (tourSkipBtn) tourSkipBtn.addEventListener('click', endTour);
+    /* tour buttons wired inside startTour() after DOM is ready */
     setTimeout(function() { if (!localStorage.getItem('pf_tour_done')) startTour(); }, 2000);
   </script>
 
