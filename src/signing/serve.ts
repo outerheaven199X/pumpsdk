@@ -178,7 +178,7 @@ function registerDashboardRoutes(app: express.Express, dashboardHtml: string): v
         result[idMap[sym] || sym.toLowerCase()] = { usd: usdData.PRICE, usd_24h_change: usdData.CHANGEPCT24HOUR };
       }
       res.json(result);
-    } catch (err) {
+    } catch {
       res.status(502).json({ error: "Price fetch failed" });
     }
   });
@@ -195,7 +195,7 @@ function registerDashboardRoutes(app: express.Express, dashboardHtml: string): v
       const raw = await ccRes.json();
       const prices = (raw.Data?.Data || []).map((d: { time: number; close: number }) => [d.time * 1000, d.close]);
       res.json({ prices });
-    } catch (err) {
+    } catch {
       res.status(502).json({ error: "Chart fetch failed" });
     }
   });
@@ -223,7 +223,7 @@ function registerDashboardRoutes(app: express.Express, dashboardHtml: string): v
       );
       const data = await pfRes.json();
       res.json(data);
-    } catch (err) {
+    } catch {
       res.status(502).json({ error: "Pump.fun fetch failed" });
     }
   });
@@ -633,10 +633,10 @@ export function startSigningServer(): void {
 
   startSessionCleanup();
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
     const debugLog = `[express-error] ${new Date().toISOString()}\n${err.message}\n${err.stack}\n---\n`;
-    try { appendFileSync("C:/Users/npitt/Desktop/pumpfun/approve-debug.log", debugLog); } catch (_) { /* */ }
+    try { appendFileSync("C:/Users/npitt/Desktop/pumpfun/approve-debug.log", debugLog); } catch { /* */ }
     process.stderr.write(debugLog);
     if (!res.headersSent) res.status(500).json({ error: err.message });
   });
@@ -920,7 +920,7 @@ function registerScoutRoutes(app: express.Express, scoutPageHtml: string): void 
       const msg = err instanceof Error ? err.message : String(err);
       const stack = err instanceof Error ? err.stack : "";
       const debugLog = `[approve] ${new Date().toISOString()}\nError: ${msg}\nStack: ${stack}\n---\n`;
-      try { appendFileSync("C:/Users/npitt/Desktop/pumpfun/approve-debug.log", debugLog); } catch (_) { /* ignore */ }
+      try { appendFileSync("C:/Users/npitt/Desktop/pumpfun/approve-debug.log", debugLog); } catch { /* ignore */ }
       process.stderr.write(debugLog);
       res.status(500).json({ error: msg });
     }

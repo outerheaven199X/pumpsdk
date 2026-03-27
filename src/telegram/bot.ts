@@ -242,7 +242,7 @@ async function showTokenCard(ctx: BotContext | Context, mint: string) {
   const d = await pump(mint);
   if (!d) return ctx.reply("Not found on Pump.fun.");
 
-  const solPrice = await getSolPrice();
+  await getSolPrice(); // warm cache
   const pp = d.virtual_sol_reserves && d.virtual_token_reserves
     ? (d.virtual_sol_reserves / 1e9) / (d.virtual_token_reserves / 1e6) : 0;
   const mcap = d.usd_market_cap ?? 0;
@@ -714,7 +714,7 @@ bot.callbackQuery("launch_execute", async (ctx) => {
       throw new Error(`Signing server error: ${createRes.status} — ${errText}`);
     }
 
-    const { signingUrl, sessionId, mintAddress } = await createRes.json() as any;
+    const { signingUrl, mintAddress } = await createRes.json() as any;
 
     ctx.session.launch!.step = "done";
 
