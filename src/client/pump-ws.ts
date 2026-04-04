@@ -1,6 +1,7 @@
 /** Real-time WebSocket client for PumpPortal — streams new token creations and trades. */
 
 import { EventEmitter } from "node:events";
+import WebSocket from "ws";
 
 const PUMPPORTAL_WS_URL = "wss://pumpportal.fun/api/data";
 const RECONNECT_BASE_MS = 1000;
@@ -27,6 +28,7 @@ export interface TradeEvent {
   traderPublicKey: string;
   txType: "buy" | "sell";
   tokenAmount: number;
+  /** SOL amount in lamports (raw from PumpPortal). Use lamportsToSol() for display. */
   solAmount: number;
   newTokenBalance: number;
   bondingCurveKey: string;
@@ -125,7 +127,7 @@ class PumpWebSocket extends EventEmitter<EventMap> {
     this.resubscribeAll();
   }
 
-  private handleMessage(event: MessageEvent): void {
+  private handleMessage(event: WebSocket.MessageEvent): void {
     try {
       const data = JSON.parse(String(event.data)) as Record<string, unknown>;
 
@@ -150,7 +152,7 @@ class PumpWebSocket extends EventEmitter<EventMap> {
     this.scheduleReconnect();
   }
 
-  private handleError(_event: Event): void {
+  private handleError(_event: WebSocket.ErrorEvent): void {
     this.emit("error", new Error("WebSocket error"));
   }
 

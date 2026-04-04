@@ -5,7 +5,7 @@
  */
 export function printInfo(): void {
   console.log("PumpFun MCP Server v2.0.0\n");
-  console.log("Tools:      30 across 8 domains");
+  console.log("Tools:      36 across 9 domains");
   console.log("Resources:  4 (launches, token, portfolio, graduating)");
   console.log("Prompts:    6 guided workflows");
   console.log("Agent:      6 autonomous strategies");

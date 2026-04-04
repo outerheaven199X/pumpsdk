@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; connect-src 'self' https://api.mainnet-beta.solana.com https://api.devnet.solana.com https://*.helius-rpc.com wss://*.helius-rpc.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' https://*.fal.media data:;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; connect-src 'self' https://api.mainnet-beta.solana.com https://api.devnet.solana.com https://*.helius-rpc.com wss://*.helius-rpc.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' https://*.fal.media data:;">
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PumpSDK — Token Launch</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -147,7 +147,7 @@
       <div id="status-area"></div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/@solana/web3.js@1.98.0/lib/index.iife.min.js"></script>
+    <script src="/static/solana-web3.js"></script>
     <script>
       var solanaWeb3 = window.solanaWeb3;
       var Connection = solanaWeb3.Connection;
@@ -275,6 +275,7 @@
           });
           if (!resp.ok) { var errData = await resp.json(); throw new Error(errData.error || "Failed"); }
           var data = await resp.json();
+          csrfToken = data.csrfToken || csrfToken;
           sessionData.imageUrl = data.imageUrl;
           renderImage(data.imageUrl);
         } catch (err) {
@@ -337,6 +338,7 @@
           }
 
           var data = await approveResp.json();
+          csrfToken = data.csrfToken || csrfToken;
           clearStatus();
           setPhase("sign");
           currentTransactions = data.transactions;
@@ -436,6 +438,7 @@
           });
           if (nextResp.ok) {
             var nextData = await nextResp.json();
+            csrfToken = nextData.csrfToken || csrfToken;
             if (nextData.phase && nextData.transactions) {
               clearStatus();
               currentTransactions = nextData.transactions;

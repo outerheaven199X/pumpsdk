@@ -12,7 +12,7 @@ async function runDryRun(): Promise<void> {
 
   /* Step 1: Create a launch session */
   console.log("1. Creating launch session...");
-  const launchUrl = createLaunchSession({
+  const launchUrl = await createLaunchSession({
     metadataUri: FAKE_METADATA_URI,
     tokenName: "DryRunToken",
     tokenSymbol: "DRY",
@@ -91,7 +91,7 @@ async function runDryRun(): Promise<void> {
   /* Step 5: Verify sign mode still works */
   console.log("\n5. Verifying sign mode still works...");
   const { createSigningSession } = await import("../src/signing/serve.js");
-  const signUrl = createSigningSession(
+  const signUrl = await createSigningSession(
     ["fake-tx-base64"],
     "Test signing session",
     { Action: "Test" },

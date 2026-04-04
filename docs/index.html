@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PumpSDK Documentation</title>
-  <meta name="description" content="PumpSDK: an MCP server providing 35 tools for Solana token trading, launching, fee management, analytics, and AI scout on Pump.fun.">
+  <meta name="description" content="PumpSDK: an MCP server providing 36 tools for Solana token trading, launching, fee management, analytics, and AI scout on Pump.fun.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -674,10 +674,10 @@
   <!-- ════════ Introduction ════════ -->
   <div class="section active" id="introduction">
     <h1>PumpSDK &mdash; MCP Server</h1>
-    <p class="subtitle">Launch, trade, and manage Solana tokens on Pump.fun through 35 Model Context Protocol tools. Zero-custody signing, AI-powered scouting, real-time streams, and an autonomous agent system &mdash; all from your MCP client.</p>
+    <p class="subtitle">Launch, trade, and manage Solana tokens on Pump.fun through 36 Model Context Protocol tools. Zero-custody signing, AI-powered scouting, real-time streams, and an autonomous agent system &mdash; all from your MCP client.</p>
 
     <div class="badges">
-      <span class="badge badge-accent">35 Tools</span>
+      <span class="badge badge-accent">36 Tools</span>
       <span class="badge badge-accent">4 Resources</span>
       <span class="badge badge-accent">6 Prompts</span>
       <a class="badge badge-info" href="https://www.npmjs.com/package/pumpsdk" target="_blank">npm pumpsdk</a>
@@ -850,7 +850,7 @@ node dist/src/index.js</code></pre>
 
     <div class="callout callout-tip">
       <strong>Tip</strong>
-      Use <code>pump_catalog</code> to see all 35 tools grouped by domain at any time.
+      Use <code>pump_catalog</code> to see all 36 tools grouped by domain at any time.
     </div>
   </div>
 
@@ -863,7 +863,7 @@ node dist/src/index.js</code></pre>
     <p>PumpSDK follows a layered architecture with clear separation between transport, tools, clients, and signing:</p>
     <ul>
       <li><strong>Transport Layer</strong> &mdash; stdio (default) or HTTP/SSE for remote connections</li>
-      <li><strong>MCP Server</strong> &mdash; registers 35 tools, 4 resources, and 6 prompts on a single <code>McpServer</code> instance</li>
+      <li><strong>MCP Server</strong> &mdash; registers 36 tools, 4 resources, and 6 prompts on a single <code>McpServer</code> instance</li>
       <li><strong>Tool Layer</strong> &mdash; 9 domain groups (trading, tokens, analytics, fees, scout, solana, state, stream, meta)</li>
       <li><strong>Client Layer</strong> &mdash; REST clients for Pump.fun API, PumpPortal API, DexScreener, fal.ai, and IPFS</li>
       <li><strong>Signing Server</strong> &mdash; local Express server on port 3142 serving wallet-connect pages</li>

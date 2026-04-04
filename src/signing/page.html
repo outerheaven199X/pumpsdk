@@ -742,6 +742,7 @@
           }
 
           var data = await connectResp.json();
+          csrfToken = data.csrfToken || csrfToken;
           clearStatus();
           updatePhaseIndicator("launch");
           showSignCard(data.description, data.transactions);
@@ -774,6 +775,7 @@
           }
 
           var data = await launchResp.json();
+          csrfToken = data.csrfToken || csrfToken;
           clearStatus();
           updatePhaseIndicator("fee_config");
           showSignCard(data.description, data.transactions);

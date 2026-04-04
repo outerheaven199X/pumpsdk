@@ -67,7 +67,7 @@ export async function runDoctor(): Promise<void> {
 
   console.log("\n=== Server Info ===");
   console.log(`  Version: 2.0.0`);
-  console.log(`  Tools: 30`);
+  console.log(`  Tools: 36`);
   console.log(`  Resources: 4`);
   console.log(`  Prompts: 6`);
   console.log(`  Agent strategies: 6`);

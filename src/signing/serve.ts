@@ -2,7 +2,7 @@
 
 import express from "express";
 import { randomUUID, randomBytes } from "node:crypto";
-import { readFileSync, appendFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Keypair } from "@solana/web3.js";
@@ -14,7 +14,8 @@ import { buildFeeConfigTxs, buildLaunchTx, buildDevBuyTx } from "./launch-builde
 import { getSession, setSession, pruneAll } from "./session-store.js";
 import { generateTokenImage, buildImagePrompt } from "../client/imagegen.js";
 import { uploadToIpfs } from "../client/ipfs.js";
-import { SIGNING_PORT, WALLET_PLACEHOLDER, ALLOWED_ORIGIN, CSRF_TOKEN_BYTES, SESSION_TTL_MS } from "../utils/constants.js";
+import { SIGNING_PORT, WALLET_PLACEHOLDER, ALLOWED_ORIGIN, CSRF_TOKEN_BYTES } from "../utils/constants.js";
+import { FLAGS } from "../utils/flags.js";
 
 const keypairStore = new Map<string, Uint8Array>();
 
@@ -89,8 +90,12 @@ interface ScoutSession {
   metadataUri: string | null;
   initialBuySol: number;
   signatures: string[];
+  regenerationCount: number;
   createdAt: number;
 }
+
+/** Maximum image regenerations allowed per scout session. */
+const MAX_REGENERATIONS_PER_SESSION = 5;
 
 type Session = SigningSession | LaunchSession | ScoutSession;
 
@@ -105,13 +110,19 @@ function generateCsrfToken(): string {
 }
 
 /**
- * Validate the request origin header against the allowed localhost origin.
+ * Stricter origin validation for POST requests.
+ * Requires either a matching Origin header OR a Referer starting with the allowed origin.
+ * Non-browser clients that omit both headers are rejected.
  * @param req - Express request.
- * @returns True if origin is valid or absent (same-origin requests omit it).
+ * @returns True if the request can be trusted as originating from the signing page.
  */
-function isValidOrigin(req: express.Request): boolean {
+function isValidOriginForPost(req: express.Request): boolean {
+  if (FLAGS.DEV_NO_CSRF) return true;
   const origin = req.headers.origin;
-  return !origin || origin === ALLOWED_ORIGIN;
+  if (origin === ALLOWED_ORIGIN) return true;
+  const referer = req.headers.referer;
+  if (referer && referer.startsWith(ALLOWED_ORIGIN)) return true;
+  return false;
 }
 
 /**
@@ -123,6 +134,20 @@ function isValidOrigin(req: express.Request): boolean {
 function isValidCsrf(req: express.Request, session: Session): boolean {
   const clientToken = req.body?.csrfToken;
   return typeof clientToken === "string" && clientToken === session.csrfToken;
+}
+
+/**
+ * Rotate the CSRF token on a session after a successful POST.
+ * Returns the new token so it can be included in the response.
+ * @param session - The session to rotate the token on.
+ * @param sessionId - Session ID for persistence.
+ * @returns The newly generated CSRF token.
+ */
+async function rotateCsrfToken(session: Session, sessionId: string): Promise<string> {
+  const newToken = generateCsrfToken();
+  session.csrfToken = newToken;
+  await setSession(sessionId, session);
+  return newToken;
 }
 
 /**
@@ -156,8 +181,8 @@ function registerRoutes(app: express.Express, pages: { page: string; scoutPage: 
  * @param dashboardHtml - Pre-loaded dashboard HTML with %%RPC_URL%% placeholder.
  */
 function registerDashboardRoutes(app: express.Express, dashboardHtml: string): void {
-  const rpcUrl = process.env.SOLANA_RPC_URL || "https://api.mainnet-beta.solana.com";
-  const renderedHtml = dashboardHtml.replaceAll("%%RPC_URL%%", rpcUrl);
+  /* Never embed the full RPC URL (may contain API keys) — use the /api/rpc proxy instead. */
+  const renderedHtml = dashboardHtml.replaceAll("%%RPC_URL%%", "/api/rpc");
 
   app.get("/dashboard", (_req, res) => {
     res.type("html").send(renderedHtml);
@@ -202,7 +227,7 @@ function registerDashboardRoutes(app: express.Express, dashboardHtml: string): v
 
   /** Generate token image via fal.ai Nano Banana. */
   app.post("/api/dashboard/generate-image", async (req, res) => {
-    if (!isValidOrigin(req)) { res.status(403).json({ error: "Invalid origin." }); return; }
+    if (!isValidOriginForPost(req)) { res.status(403).json({ error: "Invalid origin." }); return; }
     const { tokenName, tokenSymbol, description } = req.body;
     if (!tokenName) { res.status(400).json({ error: "tokenName required." }); return; }
     try {
@@ -229,7 +254,7 @@ function registerDashboardRoutes(app: express.Express, dashboardHtml: string): v
   });
 
   app.post("/api/dashboard/create-session", async (req, res) => {
-    if (!isValidOrigin(req)) {
+    if (!isValidOriginForPost(req)) {
       res.status(403).json({ error: "Invalid origin." });
       return;
     }
@@ -260,7 +285,7 @@ function registerDashboardRoutes(app: express.Express, dashboardHtml: string): v
       slippage: 10,
       priorityFee: 0.0005,
       meta: {},
-      rpcUrl: rpcUrl,
+      rpcUrl: process.env.SOLANA_RPC_URL || "https://api.mainnet-beta.solana.com",
       wallet: null,
       mintPublicKey,
       mintKeypairSecret,
@@ -268,6 +293,7 @@ function registerDashboardRoutes(app: express.Express, dashboardHtml: string): v
       csrfToken,
       initialBuySol: Number(initialBuySol) || 0,
       signatures: [],
+      regenerationCount: 0,
       createdAt: Date.now(),
     };
 
@@ -303,7 +329,7 @@ function registerSignRoutes(app: express.Express, pageHtml: string): void {
   });
 
   app.post("/api/sign/:sessionId/complete", async (req, res) => {
-    if (!isValidOrigin(req)) {
+    if (!isValidOriginForPost(req)) {
       res.status(403).json({ error: "Invalid origin." });
       return;
     }
@@ -353,7 +379,7 @@ function registerLaunchRoutes(app: express.Express, pageHtml: string): void {
 
   /* Phase 1: Wallet connects → build launch tx (token creation). */
   app.post("/api/launch/:sessionId/connect", async (req, res) => {
-    if (!isValidOrigin(req)) {
+    if (!isValidOriginForPost(req)) {
       res.status(403).json({ error: "Invalid origin." });
       return;
     }
@@ -399,12 +425,13 @@ function registerLaunchRoutes(app: express.Express, pageHtml: string): void {
       session.wallet = wallet;
       session.launchTx = result.transaction;
       session.phase = "launch";
-      await setSession(req.params.sessionId, session);
+      const newCsrf = await rotateCsrfToken(session, req.params.sessionId);
 
       res.json({
         phase: "launch",
         transactions: [result.transaction],
         description: `Launch $${session.tokenSymbol} (initial buy: ${session.initialBuySol} SOL)`,
+        csrfToken: newCsrf,
       });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -414,7 +441,7 @@ function registerLaunchRoutes(app: express.Express, pageHtml: string): void {
 
   /* Phase 2: Launch tx signed & confirmed → build fee config txs. */
   app.post("/api/launch/:sessionId/launch-signed", async (req, res) => {
-    if (!isValidOrigin(req)) {
+    if (!isValidOriginForPost(req)) {
       res.status(403).json({ error: "Invalid origin." });
       return;
     }
@@ -445,12 +472,13 @@ function registerLaunchRoutes(app: express.Express, pageHtml: string): void {
 
       session.feeConfigTxs = result.transactions;
       session.phase = "fee_config";
-      await setSession(req.params.sessionId, session);
+      const newCsrf = await rotateCsrfToken(session, req.params.sessionId);
 
       res.json({
         phase: "fee_config",
         transactions: result.transactions,
         description: `Fee setup for $${session.tokenSymbol}`,
+        csrfToken: newCsrf,
       });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -460,7 +488,7 @@ function registerLaunchRoutes(app: express.Express, pageHtml: string): void {
 
   /* Phase 3: Fee config signed → done. */
   app.post("/api/launch/:sessionId/complete", async (req, res) => {
-    if (!isValidOrigin(req)) {
+    if (!isValidOriginForPost(req)) {
       res.status(403).json({ error: "Invalid origin." });
       return;
     }
@@ -475,6 +503,7 @@ function registerLaunchRoutes(app: express.Express, pageHtml: string): void {
     }
     session.signatures.push(...(req.body.signatures || []));
     session.phase = "complete";
+    session.mintKeypairSecret = "0".repeat(session.mintKeypairSecret.length);
     keypairStore.delete(req.params.sessionId);
     await setSession(req.params.sessionId, session);
     res.json({ ok: true });
@@ -596,7 +625,7 @@ function startSessionCleanup(): void {
     try {
       for (const [id] of keypairStore) {
         const session = await getSession<Session>(id);
-        if (!session || Date.now() - session.createdAt > SESSION_TTL_MS) {
+        if (!session || Date.now() - session.createdAt > FLAGS.SESSION_TTL) {
           const secret = keypairStore.get(id);
           if (secret) secret.fill(0);
           keypairStore.delete(id);
@@ -636,7 +665,6 @@ export function startSigningServer(): void {
    
   app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
     const debugLog = `[express-error] ${new Date().toISOString()}\n${err.message}\n${err.stack}\n---\n`;
-    try { appendFileSync("C:/Users/npitt/Desktop/pumpfun/approve-debug.log", debugLog); } catch { /* */ }
     process.stderr.write(debugLog);
     if (!res.headersSent) res.status(500).json({ error: err.message });
   });
@@ -772,7 +800,7 @@ function registerScoutRoutes(app: express.Express, scoutPageHtml: string): void 
   });
 
   app.post("/api/scout/:sessionId/regenerate", async (req, res) => {
-    if (!isValidOrigin(req)) {
+    if (!isValidOriginForPost(req)) {
       res.status(403).json({ error: "Invalid origin." });
       return;
     }
@@ -785,12 +813,17 @@ function registerScoutRoutes(app: express.Express, scoutPageHtml: string): void 
       res.status(403).json({ error: "Invalid CSRF token." });
       return;
     }
+    if (session.regenerationCount >= MAX_REGENERATIONS_PER_SESSION) {
+      res.status(429).json({ error: `Maximum ${MAX_REGENERATIONS_PER_SESSION} image regenerations per session.` });
+      return;
+    }
 
     try {
+      session.regenerationCount += 1;
       const imageUrl = await generateTokenImage(session.imagePrompt);
       session.imageUrl = imageUrl;
-      await setSession(req.params.sessionId, session);
-      res.json({ imageUrl });
+      const newCsrf = await rotateCsrfToken(session, req.params.sessionId);
+      res.json({ imageUrl, csrfToken: newCsrf });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       res.status(500).json({ error: msg });
@@ -798,7 +831,7 @@ function registerScoutRoutes(app: express.Express, scoutPageHtml: string): void 
   });
 
   app.post("/api/scout/:sessionId/update", async (req, res) => {
-    if (!isValidOrigin(req)) {
+    if (!isValidOriginForPost(req)) {
       res.status(403).json({ error: "Invalid origin." });
       return;
     }
@@ -838,18 +871,19 @@ function registerScoutRoutes(app: express.Express, scoutPageHtml: string): void 
       }
     }
 
-    await setSession(req.params.sessionId, session);
+    const newCsrf = await rotateCsrfToken(session, req.params.sessionId);
     res.json({
       tokenName: session.tokenName,
       tokenSymbol: session.tokenSymbol,
       description: session.description,
       imageUrl: session.imageUrl,
+      csrfToken: newCsrf,
     });
   });
 
   app.post("/api/scout/:sessionId/approve", async (req, res) => {
     console.log("[approve] HIT — session:", req.params.sessionId, "body keys:", Object.keys(req.body));
-    if (!isValidOrigin(req)) {
+    if (!isValidOriginForPost(req)) {
       res.status(403).json({ error: "Invalid origin." });
       return;
     }
@@ -909,25 +943,25 @@ function registerScoutRoutes(app: express.Express, scoutPageHtml: string): void 
       session.metadataUri = metadataUri;
       session.initialBuySol = buySol;
       session.phase = "launch";
-      await setSession(req.params.sessionId, session);
+      const newCsrf = await rotateCsrfToken(session, req.params.sessionId);
 
       res.json({
         phase: "launch",
         transactions: [result.transaction],
         description: `Launch $${session.tokenSymbol} (dev buy: ${buySol} SOL)`,
+        csrfToken: newCsrf,
       });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       const stack = err instanceof Error ? err.stack : "";
       const debugLog = `[approve] ${new Date().toISOString()}\nError: ${msg}\nStack: ${stack}\n---\n`;
-      try { appendFileSync("C:/Users/npitt/Desktop/pumpfun/approve-debug.log", debugLog); } catch { /* ignore */ }
       process.stderr.write(debugLog);
       res.status(500).json({ error: msg });
     }
   });
 
   app.post("/api/scout/:sessionId/launch-signed", async (req, res) => {
-    if (!isValidOrigin(req)) {
+    if (!isValidOriginForPost(req)) {
       res.status(403).json({ error: "Invalid origin." });
       return;
     }
@@ -959,12 +993,13 @@ function registerScoutRoutes(app: express.Express, scoutPageHtml: string): void 
         );
 
         session.phase = "dev_buy";
-        await setSession(req.params.sessionId, session);
+        const newCsrf = await rotateCsrfToken(session, req.params.sessionId);
 
         res.json({
           phase: "dev_buy",
           transactions: [buyTx],
           description: `Dev buy ${session.initialBuySol} SOL of $${session.tokenSymbol}`,
+          csrfToken: newCsrf,
         });
         return;
       }
@@ -978,12 +1013,13 @@ function registerScoutRoutes(app: express.Express, scoutPageHtml: string): void 
       );
 
       session.phase = "fee_config";
-      await setSession(req.params.sessionId, session);
+      const newCsrf = await rotateCsrfToken(session, req.params.sessionId);
 
       res.json({
         phase: "fee_config",
         transactions: result.transactions,
         description: `Fee setup for $${session.tokenSymbol}`,
+        csrfToken: newCsrf,
       });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -993,7 +1029,7 @@ function registerScoutRoutes(app: express.Express, scoutPageHtml: string): void 
 
   /* After dev buy is signed, chain to fee config */
   app.post("/api/scout/:sessionId/dev-buy-signed", async (req, res) => {
-    if (!isValidOrigin(req)) {
+    if (!isValidOriginForPost(req)) {
       res.status(403).json({ error: "Invalid origin." });
       return;
     }
@@ -1023,12 +1059,13 @@ function registerScoutRoutes(app: express.Express, scoutPageHtml: string): void 
       );
 
       session.phase = "fee_config";
-      await setSession(req.params.sessionId, session);
+      const newCsrf = await rotateCsrfToken(session, req.params.sessionId);
 
       res.json({
         phase: "fee_config",
         transactions: result.transactions,
         description: `Fee setup for $${session.tokenSymbol}`,
+        csrfToken: newCsrf,
       });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -1037,7 +1074,7 @@ function registerScoutRoutes(app: express.Express, scoutPageHtml: string): void 
   });
 
   app.post("/api/scout/:sessionId/complete", async (req, res) => {
-    if (!isValidOrigin(req)) {
+    if (!isValidOriginForPost(req)) {
       res.status(403).json({ error: "Invalid origin." });
       return;
     }
@@ -1052,6 +1089,7 @@ function registerScoutRoutes(app: express.Express, scoutPageHtml: string): void 
     }
     session.signatures.push(...(req.body.signatures || []));
     session.phase = "complete";
+    session.mintKeypairSecret = "0".repeat(session.mintKeypairSecret.length);
     keypairStore.delete(req.params.sessionId);
     await setSession(req.params.sessionId, session);
     res.json({ ok: true });
@@ -1128,6 +1166,7 @@ export async function createScoutSession(params: ScoutSessionParams = {}): Promi
     metadataUri: null,
     initialBuySol: params.initialBuySol ?? 0,
     signatures: [],
+    regenerationCount: 0,
     createdAt: Date.now(),
   } satisfies ScoutSession);
 

@@ -103,9 +103,9 @@ run().catch(e => { console.error('✗ FAILED:', e.message); process.exit(1); });
 
 ---
 
-## Step 2: Dry Run #2 — Full 3-Phase Flow (Connect → Fee Config → Launch)
+## Step 2: Dry Run #2 — Full 3-Phase Flow (Connect → Launch → Fee Config)
 
-This simulates the complete launch pipeline — wallet connect, fee config tx build, launch tx build, and session completion:
+This simulates the complete launch pipeline — wallet connect, launch tx build, fee config tx build, and session completion:
 
 ```bash
 cd C:\Users\npitt\Desktop\pumpfun
@@ -130,8 +130,8 @@ async function run() {
   const sessionId = launchUrl.split('/launch/')[1];
   await new Promise(r => setTimeout(r, 500));
 
-  // PHASE 1: Connect wallet
-  console.log('Phase 1: Connect wallet');
+  // PHASE 1: Connect wallet → build launch tx
+  console.log('Phase 1: Connect wallet → build launch tx');
   const WALLET = 'GsbwXfJraMomNxBcjYLcG3mxkBUiyWXAB32fGbSQQRre';
   const connectResp = await fetch('http://localhost:3142/api/launch/' + sessionId + '/connect', {
     method: 'POST',
@@ -141,41 +141,41 @@ async function run() {
   const connectData = await connectResp.json();
   console.log('   Status:', connectResp.status);
   console.log('   Phase:', connectData.phase);
-  console.log('   Fee config txs:', connectData.transactions?.length);
+  console.log('   Launch txs:', connectData.transactions?.length);
   console.log('   Tx size:', connectData.transactions?.[0]?.length, 'base64 chars');
-  if (connectData.phase !== 'fee_config') throw new Error('Expected fee_config phase');
-  console.log('   ✓ Fee config transaction built');
+  if (connectData.phase !== 'launch') throw new Error('Expected launch phase');
+  console.log('   ✓ Launch transaction built (mint keypair generated, partially signed)');
 
-  // PHASE 2: Fee signed -> build launch tx
-  console.log('\nPhase 2: Fee signed → build launch tx');
-  const feeResp = await fetch('http://localhost:3142/api/launch/' + sessionId + '/fee-signed', {
+  // PHASE 2: Launch signed → build fee config txs
+  console.log('\nPhase 2: Launch signed → build fee config txs');
+  const launchResp = await fetch('http://localhost:3142/api/launch/' + sessionId + '/launch-signed', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ signatures: ['simulated-fee-sig'] }),
+    body: JSON.stringify({ signatures: ['simulated-launch-sig'] }),
   });
-  const feeData = await feeResp.json();
-  console.log('   Status:', feeResp.status);
-  console.log('   Phase:', feeData.phase);
-  console.log('   Launch txs:', feeData.transactions?.length);
-  console.log('   Tx size:', feeData.transactions?.[0]?.length, 'base64 chars');
-  console.log('   Description:', feeData.description);
-  if (feeData.phase !== 'launch') throw new Error('Expected launch phase');
-  console.log('   ✓ Launch transaction built (mint keypair generated, partially signed)');
+  const launchData = await launchResp.json();
+  console.log('   Status:', launchResp.status);
+  console.log('   Phase:', launchData.phase);
+  console.log('   Fee config txs:', launchData.transactions?.length);
+  console.log('   Tx size:', launchData.transactions?.[0]?.length, 'base64 chars');
+  console.log('   Description:', launchData.description);
+  if (launchData.phase !== 'fee_config') throw new Error('Expected fee_config phase');
+  console.log('   ✓ Fee config transaction built');
 
   // PHASE 3: Complete
   console.log('\nPhase 3: Complete');
   const completeResp = await fetch('http://localhost:3142/api/launch/' + sessionId + '/complete', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ signatures: ['simulated-launch-sig'] }),
+    body: JSON.stringify({ signatures: ['simulated-fee-sig'] }),
   });
   const completeData = await completeResp.json();
   console.log('   ✓ Session complete:', completeData.ok);
 
   console.log('\n=== Dry Run #2 PASSED ===');
   console.log('\nAll 3 phases work:');
-  console.log('  1. Connect → fee config tx built (' + connectData.transactions[0].length + ' chars)');
-  console.log('  2. Fee signed → launch tx built (' + feeData.transactions[0].length + ' chars)');
+  console.log('  1. Connect → launch tx built (' + connectData.transactions[0].length + ' chars)');
+  console.log('  2. Launch signed → fee config tx built (' + launchData.transactions[0].length + ' chars)');
   console.log('  3. Complete → session closed');
   console.log('\nReady for mainnet.');
   process.exit(0);
@@ -278,10 +278,10 @@ Give them the `launchUrl`. That's all they need. The page handles everything els
 1. **Page loads** — dark theme, "Pump.fun MCP — Token Launcher" header, 3 phase dots at top
 2. **Token details card** — shows name, symbol, initial buy
 3. **Wallet buttons** — Phantom, Solflare, Backpack, etc. User clicks Phantom
-4. **Phase 1 completes** — wallet connected, first dot lights up, "Building fee config..." spinner
-5. **Fee config tx appears** — "Sign & Send" button, user clicks, Phantom pops up, user approves
-6. **Phase 2 completes** — second dot lights up, "Building launch transaction..." spinner
-7. **Launch tx appears** — "Sign & Send" button again, user clicks, Phantom pops up, user approves
+4. **Phase 1 completes** — wallet connected, first dot lights up, "Building launch transaction..." spinner
+5. **Launch tx appears** — "Sign & Send" button, user clicks, Phantom pops up, user approves
+6. **Phase 2 completes** — second dot lights up, "Building fee config..." spinner
+7. **Fee config tx appears** — "Sign & Send" button again, user clicks, Phantom pops up, user approves
 8. **Phase 3 completes** — all 3 dots green, "Token launched!" message, Solscan links shown
 
 ---
@@ -307,7 +307,7 @@ Give them the `launchUrl`. That's all they need. The page handles everything els
 2. **No undo.** Once the launch tx is signed, the token is live immediately.
 3. **Signing server auto-starts.** It boots on `localhost:3142` when any tool is called.
 4. **Phantom must be installed** in the browser. The page auto-detects it.
-5. **Mint address is generated server-side** during Phase 2 — it's not known until after fee config is signed.
+5. **Mint address is generated server-side** during session creation — the launch tx references it, and fee config is built after the launch tx is signed and confirmed.
 6. **The `.env` has no `SOLANA_RPC_URL` set**, which means it defaults to mainnet (`https://api.mainnet-beta.solana.com`).
 
 ---
@@ -316,7 +316,7 @@ Give them the `launchUrl`. That's all they need. The page handles everything els
 
 ```
 src/
-  index.ts                          — MCP server entry, registers all 8 tools
+  index.ts                          — MCP server entry, registers all 36 tools
   client/pump-rest.ts               — REST client for Pump.fun + PumpPortal APIs
   signing/
     serve.ts                        — Express server: /sign routes + /launch routes

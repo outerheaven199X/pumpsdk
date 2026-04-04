@@ -8,7 +8,7 @@ npx -y pumpsdk
 
 Launch tokens on Pump.fun from Claude. Trade them. Watch the market. Generate the art. Your keys never leave your browser.
 
-PumpSDK is an MCP server. It gives Claude (or any MCP-compatible client) 30+ tools for interacting with Pump.fun on Solana. You describe a token in plain language. Claude builds it, generates artwork, configures fees, and hands you a signing URL. You approve the transaction in your browser wallet. Done.
+PumpSDK is an MCP server. It gives Claude (or any MCP-compatible client) 36 tools for interacting with Pump.fun on Solana. You describe a token in plain language. Claude builds it, generates artwork, configures fees, and hands you a signing URL. You approve the transaction in your browser wallet. Done.
 
 No private keys on the server. No custody. No RPC node to run. One dependency: Node 20+.
 
@@ -103,7 +103,7 @@ All flags are environment variables. Set them in your shell, `.env` file, or Cla
 | `PUMPSDK_NO_WS=1` | off | Skips the PumpPortal WebSocket connection. Saves bandwidth if you only need MCP tools. |
 | `PUMPSDK_NO_IMAGE_GEN=1` | off | Disables image generation even if `FAL_API_KEY` is set. |
 | `PUMPSDK_DEBUG_API=1` | off | Logs all outbound API requests and responses. Verbose. |
-| `PUMPSDK_SESSION_TTL` | `3600000` | Session timeout in milliseconds. Default is 1 hour. |
+| `PUMPSDK_SESSION_TTL` | `600000` | Session timeout in milliseconds. Default is 10 minutes. |
 | `PUMPSDK_DEV_NO_CSRF=1` | off | Disables CSRF validation on the signing server. Development only. Never in production. |
 | `PUMPSDK_ENCRYPT_SESSIONS=1` | off | Encrypts session data at rest. |
 
@@ -174,7 +174,7 @@ src/
 The signing server didn't start. Check that nothing else is using port 3142 (`netstat -ano | findstr :3142` on Windows, `lsof -i :3142` on Mac/Linux). Kill zombie node processes: `taskkill /F /IM node.exe` (Windows) or `pkill -f node` (Mac/Linux). PumpSDK starts it automatically, but stale processes from prior runs can hold the port.
 
 **"Session expired" / 410 when trying to sign**
-Default TTL is 1 hour. If you're getting 410s immediately, the issue is likely a stale server process running old code. Kill all node processes, rebuild, and restart. The session keypair is stored in `.sessions/sessions.json` and survives restarts.
+Default TTL is 10 minutes. If you're getting 410s immediately, the issue is likely a stale server process running old code. Kill all node processes, rebuild, and restart. The session keypair is stored in `.sessions/sessions.json` and survives restarts.
 
 **PumpPortal returns 400: Bad Request on token creation**
 As of March 2026, PumpPortal's `/api/trade-local` endpoint rejects `action: "create"` with any non-zero `amount`. This is universal — it happens with every wallet regardless of balance. The workaround: create with `amount: 0`, then issue a separate `action: "buy"` transaction after the create tx confirms on-chain. PumpSDK handles this two-step flow automatically.
