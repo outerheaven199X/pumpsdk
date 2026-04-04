@@ -1,7 +1,5 @@
 # PumpSDK
 
-> **Status: WIP** — Core launch pipeline works end-to-end (create → sign → fee config). Currently building: dashboard UI, more trading tools, Telegram bot. Signing flow is stable — do not touch it.
-
 ```bash
 npx -y pumpsdk
 ```
