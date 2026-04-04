@@ -99,7 +99,10 @@ function readStore(): StoreData {
     const raw = readFileSync(STORE_PATH, "utf-8");
     const json = FLAGS.ENCRYPT_SESSIONS ? decrypt(raw) : raw;
     return JSON.parse(json) as StoreData;
-  } catch {
+  } catch (err) {
+    if (FLAGS.ENCRYPT_SESSIONS) {
+      console.error("[session-store] Failed to read/decrypt store:", err instanceof Error ? err.message : String(err));
+    }
     return {};
   }
 }

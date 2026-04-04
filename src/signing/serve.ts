@@ -882,7 +882,6 @@ function registerScoutRoutes(app: express.Express, scoutPageHtml: string): void 
   });
 
   app.post("/api/scout/:sessionId/approve", async (req, res) => {
-    console.log("[approve] HIT — session:", req.params.sessionId, "body keys:", Object.keys(req.body));
     if (!isValidOriginForPost(req)) {
       res.status(403).json({ error: "Invalid origin." });
       return;
@@ -917,27 +916,18 @@ function registerScoutRoutes(app: express.Express, scoutPageHtml: string): void 
         return;
       }
       const mintKeypair = Keypair.fromSecretKey(new Uint8Array(secretBytes));
-      console.error(`[approve-debug] mintKeypair pubkey=${mintKeypair.publicKey.toBase58()} from session JSON (${secretBytes.length} bytes)`);
       const buySol = session.initialBuySol;
 
-      let result;
-      try {
-        result = await buildLaunchTx(
-          wallet,
-          metadataUri,
-          session.tokenName,
-          session.tokenSymbol,
-          buySol,
-          session.slippage,
-          session.priorityFee,
-          mintKeypair,
-        );
-      } catch (buildErr: unknown) {
-        const msg = buildErr instanceof Error ? buildErr.message : String(buildErr);
-        const stack = buildErr instanceof Error ? buildErr.stack : "";
-        console.error(`[approve-debug] buildLaunchTx FAILED: ${msg}\n${stack}`);
-        throw buildErr;
-      }
+      const result = await buildLaunchTx(
+        wallet,
+        metadataUri,
+        session.tokenName,
+        session.tokenSymbol,
+        buySol,
+        session.slippage,
+        session.priorityFee,
+        mintKeypair,
+      );
 
       session.wallet = wallet;
       session.metadataUri = metadataUri;

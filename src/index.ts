@@ -44,7 +44,11 @@ async function main(): Promise<void> {
 function registerShutdownHandler(): void {
   const shutdown = () => {
     console.error(`[${SERVER_NAME}] Shutting down...`);
-    pumpWs.disconnect();
+    try {
+      pumpWs.disconnect();
+    } catch (err) {
+      console.error(`[${SERVER_NAME}] Shutdown error:`, err);
+    }
     process.exit(0);
   };
   process.on("SIGINT", shutdown);
